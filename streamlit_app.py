@@ -142,9 +142,12 @@ if st.button("Search") and barcode and barcode.isdigit():
             if upc_results:
                 for item in upc_results:
                     st.write("---")
-                    # Only show title and variants
+                    # Create UPCItemDB link
+                    upc_link = f"https://www.upcitemdb.com/upc/{barcode}"
+                    
+                    # Show title with link to UPCItemDB
                     if 'title' in item:
-                        st.markdown(f"**Product:** {item['title']}")
+                        st.markdown(f"**Product:** [{item['title']}]({upc_link})")
                     if 'variants' in item:
                         st.markdown("**Variants:**")
                         for variant in item['variants']:
@@ -158,6 +161,27 @@ if st.button("Search") and barcode and barcode.isdigit():
             if google_results:
                 for item in google_results:
                     st.write("---")
-                    st.markdown(f"**[{item.get('title', 'No title')}]({item.get('link', '#')})**")
+                    title = item.get('title', 'No title')
+                    link = item.get('link', '#')
+                    
+                    # Extract retailer name from URL or title
+                    retailer = ""
+                    if 'amazon.com' in link.lower():
+                        retailer = "Amazon"
+                    elif 'walmart.com' in link.lower():
+                        retailer = "Walmart"
+                    elif 'target.com' in link.lower():
+                        retailer = "Target"
+                    elif 'ebay.com' in link.lower():
+                        retailer = "eBay"
+                    elif 'bestbuy.com' in link.lower():
+                        retailer = "Best Buy"
+                    else:
+                        # Try to get domain name as retailer
+                        from urllib.parse import urlparse
+                        domain = urlparse(link).netloc.replace('www.', '')
+                        retailer = domain.split('.')[0].title()
+                    
+                    st.markdown(f"**{retailer}:** [{title}]({link})")
             else:
                 st.info("No Google results found")
