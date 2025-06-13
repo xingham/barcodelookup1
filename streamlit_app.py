@@ -11,12 +11,19 @@ if 'current_key_index' not in st.session_state:
 # Configure page
 st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
 
-# Load API keys from secrets
+# Debug mode
+DEBUG = True
+
+# Load API keys from secrets with debug info
 try:
     GOOGLE_API_KEYS = st.secrets["GOOGLE_API_KEYS"]
     GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+    if DEBUG:
+        st.sidebar.write("API Keys loaded successfully")
 except Exception as e:
-    st.error("Error loading API keys from secrets. Please check your configuration.")
+    st.error(f"Error loading API keys from secrets: {str(e)}")
+    if DEBUG:
+        st.sidebar.write(f"Secret loading error: {str(e)}")
     st.stop()
 
 def get_next_api_key():
@@ -26,130 +33,103 @@ def get_next_api_key():
     st.session_state.current_key_index = (st.session_state.current_key_index + 1) % len(GOOGLE_API_KEYS)
     return key
 
-def search_google(query):
-    try:
-        api_key = get_next_api_key()
-        if not api_key:
-            return [{
-                'quota_exceeded': True, 
-                'snippet': 'API keys not configured or all keys exhausted'
-            }]
-        
-        service = build('customsearch', 'v1', developerKey=api_key)
-        result = service.cse().list(
-            q=query,
-            cx=GOOGLE_CSE_ID,
-            num=10
-        ).execute()
-        
-        return result.get('items', [])
-        
-    except googleapiclient_errors.HttpError as e:
-        if 'quota' in str(e).lower():
-            return [{
-                'quota_exceeded': True,
-                'snippet': 'Daily API quota exceeded'
-            }]
-        return [{
-            'error': True,
-            'snippet': f'API Error: {str(e)}'
-        }]
-    except Exception as e:
-        return [{
-            'error': True,
-            'snippet': f'Unexpected error: {str(e)}'
-        }]
-
-@st.cache_data(ttl=3600)  # Cache results for 1 hour
+@st.cache_data(ttl=3600)
 def search_upcitemdb(barcode):
     try:
         url = f'https://www.upcitemdb.com/upc/{barcode}'
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
-        response = requests.get(url, headers=headers)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()  # Raise exception for bad status codes
+        
+        if DEBUG:
+            st.sidebar.write(f"UPC Response Status: {response.status_code}")
+        
         soup = BeautifulSoup(response.text, 'html.parser')
         
         results = []
         product_info = {}
         
-        # Extract product details
+        # Extract product details with debug info
         title = soup.find('h1', class_='product-name')
         if title:
             product_info['title'] = title.text.strip()
-            
-        brand = soup.find('span', class_='brand')
-        if brand:
-            product_info['brand'] = brand.text.strip()
-            
-        barcodes = soup.find_all('span', class_='upc-code')
-        if barcodes:
-            product_info['barcodes'] = [b.text.strip() for b in barcodes]
-            
-        variants = soup.find_all('div', class_='variant')
-        if variants:
-            product_info['variants'] = [v.text.strip() for v in variants]
-            
+            if DEBUG:
+                st.sidebar.write(f"Found title: {product_info['title']}")
+        
+        # Add more detailed product information
+        description = soup.find('div', class_='detail-description')
+        if description:
+            product_info['description'] = description.text.strip()
+        
         if product_info:
             results.append(product_info)
             
         return results
     except Exception as e:
-        st.error(f"Error fetching UPC data: {str(e)}")
+        if DEBUG:
+            st.sidebar.error(f"UPC Search Error: {str(e)}")
         return []
 
-# Streamlit UI
+def search_google(query):
+    try:
+        api_key = get_next_api_key()
+        if not api_key:
+            if DEBUG:
+                st.sidebar.error("No API key available")
+            return []
+        
+        service = build('customsearch', 'v1', developerKey=api_key)
+        result = service.cse().list(q=query, cx=GOOGLE_CSE_ID, num=10).execute()
+        
+        if DEBUG:
+            st.sidebar.write(f"Google API Response: {len(result.get('items', []))} results")
+        
+        return result.get('items', [])
+    except Exception as e:
+        if DEBUG:
+            st.sidebar.error(f"Google Search Error: {str(e)}")
+        return []
+
+# Main UI
 st.title("Barcode Product Lookup")
 
-# Input section with validation
+# Input with immediate validation
 barcode = st.text_input("Enter barcode number")
-if barcode and not barcode.isdigit():
-    st.warning("Please enter only numbers for the barcode")
-
-if st.button("Search") and barcode and barcode.isdigit():
-    if barcode:
-        with st.spinner("Searching..."):
-            # Search UPCItemDB
-            upcitemdb_results = search_upcitemdb(barcode)
-            
-            # Create two columns for results
-            col1, col2 = st.columns(2)
-            
-            # UPCItemDB Results
-            with col1:
-                st.subheader("UPCItemDB Results")
-                if upcitemdb_results:
-                    for product in upcitemdb_results:
-                        if 'variants' in product:
-                            st.markdown("**Product Variants:**")
-                            for variant in product['variants']:
-                                st.markdown(f"- {variant}")
-                        
-                        if 'brand' in product:
-                            st.markdown(f"**Brand:** {product['brand']}")
-                        
-                        if 'barcodes' in product:
-                            st.markdown("**Barcodes:**")
-                            for barcode in product['barcodes']:
-                                st.markdown(f"- {barcode}")
-                        
-                        st.markdown("---")
-                else:
-                    st.info("No results found in UPCItemDB")
-            
-            # Google Search Results
-            with col2:
-                st.subheader("Google Search Results")
-                if upcitemdb_results:  # Only search Google if UPCItemDB has results
-                    google_results = search_google(barcode)
-                    if google_results:
-                        for result in google_results:
-                            if not result.get('quota_exceeded'):
-                                domain = result['link'].split('/')[2].replace('www.', '')
-                                st.markdown(f"**{domain}**")
-                                st.markdown(f"[{result['title']}]({result['link']})")
-                                st.markdown("---")
-                            else:
-                                st.warning(result['snippet'])
-                    else:
-                        st.info("No Google results found")
+if barcode:
+    if not barcode.isdigit():
+        st.warning("Please enter only numbers for the barcode")
+    elif len(barcode) < 8:
+        st.warning("Barcode must be at least 8 digits")
     else:
-        st.error("Please enter a barcode")
+        st.success("Valid barcode entered")
+
+# Search button with progress indicators
+if st.button("Search") and barcode and barcode.isdigit():
+    with st.spinner("Searching databases..."):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("UPC Database Results")
+            upc_results = search_upcitemdb(barcode)
+            if upc_results:
+                for item in upc_results:
+                    st.write("---")
+                    if 'title' in item:
+                        st.markdown(f"**Product:** {item['title']}")
+                    if 'description' in item:
+                        st.markdown(f"**Description:** {item['description']}")
+            else:
+                st.info("No UPC results found")
+        
+        with col2:
+            st.subheader("Google Search Results")
+            google_results = search_google(barcode)
+            if google_results:
+                for item in google_results:
+                    st.write("---")
+                    st.markdown(f"**[{item.get('title', 'No title')}]({item.get('link', '#')})**")
+                    st.markdown(f"_{item.get('snippet', 'No description')}_")
+            else:
+                st.info("No Google results found")
