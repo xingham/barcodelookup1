@@ -53,7 +53,21 @@ st.markdown("""
         }
         
         /* Style button text to be white */
-        .stButton button, .stButton span {
+        .stButton button {
+            color: white !important;
+        }
+        
+        /* Style button label text to be white */
+        .stButton > button > p {
+            color: white !important;
+        }
+        
+        /* Override any inherited button text color */
+        .stButton button:hover {
+            color: white !important;
+        }
+        
+        .stButton button:active {
             color: white !important;
         }
     </style>
