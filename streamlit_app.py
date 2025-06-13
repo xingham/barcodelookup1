@@ -38,38 +38,43 @@ def search_upcitemdb(barcode):
     try:
         url = f'https://www.upcitemdb.com/upc/{barcode}'
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()  # Raise exception for bad status codes
+        response.raise_for_status()
         
         if DEBUG:
             st.sidebar.write(f"UPC Response Status: {response.status_code}")
+            st.sidebar.write(f"UPC Response Text Length: {len(response.text)}")
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
         results = []
         product_info = {}
         
-        # Extract product details with debug info
-        title = soup.find('h1', class_='product-name')
+        # Try different selectors for product information
+        title = soup.find('h1', {'itemprop': 'name'}) or soup.find('h1', class_='product-name')
         if title:
             product_info['title'] = title.text.strip()
-            if DEBUG:
-                st.sidebar.write(f"Found title: {product_info['title']}")
         
-        # Add more detailed product information
-        description = soup.find('div', class_='detail-description')
-        if description:
-            product_info['description'] = description.text.strip()
+        # Look for product details in various locations
+        details = soup.find('div', class_='product-details') or soup.find('div', class_='detail-description')
+        if details:
+            product_info['description'] = details.text.strip()
         
         if product_info:
             results.append(product_info)
-            
+            if DEBUG:
+                st.sidebar.write("Found product info:", product_info)
+        else:
+            if DEBUG:
+                st.sidebar.warning("No product info found in HTML")
+        
         return results
     except Exception as e:
         if DEBUG:
             st.sidebar.error(f"UPC Search Error: {str(e)}")
+            st.sidebar.write("Failed URL:", url)
         return []
 
 def search_google(query):
@@ -130,6 +135,5 @@ if st.button("Search") and barcode and barcode.isdigit():
                 for item in google_results:
                     st.write("---")
                     st.markdown(f"**[{item.get('title', 'No title')}]({item.get('link', '#')})**")
-                    st.markdown(f"_{item.get('snippet', 'No description')}_")
             else:
                 st.info("No Google results found")
