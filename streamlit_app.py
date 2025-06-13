@@ -23,18 +23,38 @@ def get_next_api_key():
     return key
 
 def search_google(query):
-    api_key = get_next_api_key()
-    if not api_key:
-        return [{'quota_exceeded': True, 'snippet': 'API keys not configured'}]
-    
     try:
+        api_key = get_next_api_key()
+        if not api_key:
+            return [{
+                'quota_exceeded': True, 
+                'snippet': 'API keys not configured or all keys exhausted'
+            }]
+        
         service = build('customsearch', 'v1', developerKey=api_key)
-        result = service.cse().list(q=query, cx=GOOGLE_CSE_ID).execute()
+        result = service.cse().list(
+            q=query,
+            cx=GOOGLE_CSE_ID,
+            num=10
+        ).execute()
+        
         return result.get('items', [])
+        
     except googleapiclient_errors.HttpError as e:
         if 'quota' in str(e).lower():
-            return [{'quota_exceeded': True, 'snippet': 'API quota exceeded'}]
-        return [{'error': True, 'snippet': str(e)}]
+            return [{
+                'quota_exceeded': True,
+                'snippet': 'Daily API quota exceeded'
+            }]
+        return [{
+            'error': True,
+            'snippet': f'API Error: {str(e)}'
+        }]
+    except Exception as e:
+        return [{
+            'error': True,
+            'snippet': f'Unexpected error: {str(e)}'
+        }]
 
 @st.cache_data(ttl=3600)  # Cache results for 1 hour
 def search_upcitemdb(barcode):
