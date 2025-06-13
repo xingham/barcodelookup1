@@ -78,6 +78,32 @@ st.markdown("""
         button *, .stButton button *, [data-testid="baseButton-secondary"] * {
             color: white !important;
         }
+        
+        /* Make all menu button text white */
+        [data-testid="StyledFullScreenButton"], 
+        [data-testid="menuButton"],
+        [data-baseweb="button"],
+        button[kind="minimal"] {
+            color: white !important;
+        }
+        
+        /* Target the three dots menu button and its contents */
+        .stDeployButton span,
+        .stDeployButton svg,
+        [data-testid="StyledFullScreenButton"] span,
+        [data-testid="StyledFullScreenButton"] svg,
+        [data-testid="menuButton"] span,
+        [data-testid="menuButton"] svg {
+            color: white !important;
+            fill: white !important;
+        }
+        
+        /* Target dropdown menu items */
+        [data-baseweb="menu"] li,
+        [data-baseweb="menu"] span,
+        [data-baseweb="menu"] svg {
+            color: white !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
