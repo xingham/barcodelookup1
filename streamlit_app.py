@@ -27,9 +27,14 @@ st.markdown("""
             margin: 10px;
         }
         
-        /* Make text dark purple */
-        .stMarkdown, .stSubheader, .stTitle {
+        /* Make all text elements dark purple */
+        .stMarkdown, .stSubheader, .stTitle, h1, h2, h3, p, span, div {
             color: #4B0082 !important;  /* indigo/dark purple */
+        }
+        
+        /* Style headers specifically */
+        .stHeadingContainer {
+            color: #4B0082 !important;
         }
         
         /* Make warning and info messages dark purple */
@@ -39,6 +44,16 @@ st.markdown("""
         
         /* Style footer text */
         .footer {
+            color: #4B0082 !important;
+        }
+        
+        /* Style input text */
+        .stTextInput input {
+            color: #4B0082 !important;
+        }
+        
+        /* Style button text */
+        .stButton button {
             color: #4B0082 !important;
         }
     </style>
