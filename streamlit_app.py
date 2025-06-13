@@ -8,8 +8,31 @@ import requests
 if 'current_key_index' not in st.session_state:
     st.session_state.current_key_index = 0
 
-# Configure page
+# Configure page with custom styling
 st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
+
+# Add custom CSS
+st.markdown("""
+    <style>
+        /* Main page background */
+        .stApp {
+            background-color: #ffffcc;  /* pastel yellow */
+        }
+        
+        /* Purple background for results columns */
+        [data-testid="column"] {
+            background-color: #e6e6fa;  /* light purple */
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px;
+        }
+        
+        /* Ensure text remains readable */
+        .stMarkdown {
+            color: #000000;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Debug mode
 DEBUG = True
