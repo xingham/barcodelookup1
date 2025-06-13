@@ -53,51 +53,46 @@ def search_upcitemdb(barcode):
         soup = BeautifulSoup(response.text, 'html.parser')
         products = []
         product_info = {}
-        
-        # Try to find product name
-        title = soup.find('h1', class_='product-name')
-        if title:
-            product_info['title'] = title.text.strip()
-            if DEBUG:
-                st.sidebar.write(f"Found title: {product_info['title']}")
-        
-        # Try to find product details
-        details = soup.find('div', class_='product-meta')
-        if details:
-            # Extract brand
-            brand = details.find('span', class_='brand')
-            if brand:
-                product_info['brand'] = brand.text.strip()
+
+        # Look for variants in the ordered list
+        variants_list = soup.select('ol.num li')
+        if variants_list:
+            variants = []
+            for variant in variants_list:
+                text = variant.get_text(strip=True)
+                if text:
+                    variants.append(text)
+                    # Use first variant as title if not already set
+                    if not product_info.get('title'):
+                        product_info['title'] = text
+                    if DEBUG:
+                        st.sidebar.write(f"Found variant: {text}")
             
-            # Extract description
-            desc = details.find('div', class_='note')
-            if desc:
-                product_info['description'] = desc.text.strip()
-        
-        # Extract product details from table
-        details_table = soup.find('table', class_='detail-list')
+            if variants:
+                product_info['variants'] = variants
+                
+        # Look for any details table
+        details_table = soup.find('table')
         if details_table:
             rows = details_table.find_all('tr')
             for row in rows:
                 cols = row.find_all(['th', 'td'])
                 if len(cols) == 2:
-                    key = cols[0].text.strip()
-                    value = cols[1].text.strip()
+                    key = cols[0].get_text(strip=True)
+                    value = cols[1].get_text(strip=True)
                     if key and value:
                         product_info[key.lower()] = value
-        
+                        if DEBUG:
+                            st.sidebar.write(f"Found detail: {key} = {value}")
+
         if product_info:
             products.append(product_info)
             if DEBUG:
                 st.sidebar.success("Found product information")
                 st.sidebar.write(product_info)
-        
+            
         return products
         
-    except requests.RequestException as e:
-        if DEBUG:
-            st.sidebar.error(f"Request failed: {str(e)}")
-        return []
     except Exception as e:
         if DEBUG:
             st.sidebar.error(f"Error: {str(e)}")
@@ -149,8 +144,13 @@ if st.button("Search") and barcode and barcode.isdigit():
                     st.write("---")
                     if 'title' in item:
                         st.markdown(f"**Product:** {item['title']}")
-                    if 'description' in item:
-                        st.markdown(f"**Description:** {item['description']}")
+                    if 'variants' in item:
+                        st.markdown("**Variants:**")
+                        for variant in item['variants']:
+                            st.markdown(f"- {variant}")
+                    for key, value in item.items():
+                        if key not in ['title', 'variants']:
+                            st.markdown(f"**{key.title()}:** {value}")
             else:
                 st.info("No UPC results found")
         
