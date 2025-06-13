@@ -38,43 +38,80 @@ def search_upcitemdb(barcode):
     try:
         url = f'https://www.upcitemdb.com/upc/{barcode}'
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://www.upcitemdb.com/',
+            'Connection': 'keep-alive'
         }
-        response = requests.get(url, headers=headers, timeout=10)
+        
+        if DEBUG:
+            st.sidebar.write(f"Fetching UPC data for: {barcode}")
+        
+        response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         
         if DEBUG:
             st.sidebar.write(f"UPC Response Status: {response.status_code}")
-            st.sidebar.write(f"UPC Response Text Length: {len(response.text)}")
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
         results = []
         product_info = {}
         
-        # Try different selectors for product information
-        title = soup.find('h1', {'itemprop': 'name'}) or soup.find('h1', class_='product-name')
+        # Try multiple selectors for product title
+        title = (
+            soup.find('h1', class_='product-name') or 
+            soup.find('h1', {'itemprop': 'name'}) or
+            soup.find('div', class_='product-title')
+        )
+        
         if title:
             product_info['title'] = title.text.strip()
+            if DEBUG:
+                st.sidebar.write(f"Found title: {product_info['title']}")
         
-        # Look for product details in various locations
-        details = soup.find('div', class_='product-details') or soup.find('div', class_='detail-description')
-        if details:
-            product_info['description'] = details.text.strip()
+        # Try to find product details table
+        details_table = soup.find('table', class_='detail-table')
+        if details_table:
+            rows = details_table.find_all('tr')
+            for row in rows:
+                cols = row.find_all(['th', 'td'])
+                if len(cols) == 2:
+                    key = cols[0].text.strip().lower()
+                    value = cols[1].text.strip()
+                    product_info[key] = value
+        
+        # Look for description
+        description = (
+            soup.find('div', class_='detail-description') or
+            soup.find('div', {'itemprop': 'description'}) or
+            soup.find('div', class_='product-description')
+        )
+        
+        if description:
+            product_info['description'] = description.text.strip()
         
         if product_info:
             results.append(product_info)
             if DEBUG:
-                st.sidebar.write("Found product info:", product_info)
+                st.sidebar.success("Product information found!")
+                st.sidebar.write(product_info)
         else:
             if DEBUG:
                 st.sidebar.warning("No product info found in HTML")
+                # Save HTML for debugging
+                with open('debug_response.html', 'w') as f:
+                    f.write(response.text)
         
         return results
+    except requests.RequestException as e:
+        if DEBUG:
+            st.sidebar.error(f"Request Error: {str(e)}")
+        return []
     except Exception as e:
         if DEBUG:
-            st.sidebar.error(f"UPC Search Error: {str(e)}")
-            st.sidebar.write("Failed URL:", url)
+            st.sidebar.error(f"General Error: {str(e)}")
         return []
 
 def search_google(query):
