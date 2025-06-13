@@ -206,18 +206,19 @@ if barcode:
 # Search button with progress indicators
 if st.button("Search") and barcode and barcode.isdigit():
     with st.spinner("Searching databases..."):
-        col1, col2 = st.columns(2)
+        # Create two equal-width columns
+        col1, col2 = st.columns([1, 1])
         
+        # First column - UPC Database Results
         with col1:
+            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
             st.subheader("UPC Database Results")
+            st.markdown("</div>", unsafe_allow_html=True)
             upc_results = search_upcitemdb(barcode)
             if upc_results:
                 for item in upc_results:
                     st.write("---")
-                    # Create UPCItemDB link
                     upc_link = f"https://www.upcitemdb.com/upc/{barcode}"
-                    
-                    # Show title with link to UPCItemDB
                     if 'title' in item:
                         st.markdown(f"**Product:** [{item['title']}]({upc_link})")
                     if 'variants' in item:
@@ -226,9 +227,12 @@ if st.button("Search") and barcode and barcode.isdigit():
                             st.markdown(f"- {variant}")
             else:
                 st.info("No UPC results found")
-        
+
+        # Second column - Google Search Results
         with col2:
+            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
             st.subheader("Google Search Results")
+            st.markdown("</div>", unsafe_allow_html=True)
             google_results = search_google(barcode)
             if google_results:
                 for item in google_results:
@@ -236,7 +240,7 @@ if st.button("Search") and barcode and barcode.isdigit():
                     title = item.get('title', 'No title')
                     link = item.get('link', '#')
                     
-                    # Extract retailer name from URL or title
+                    # Extract retailer name
                     retailer = ""
                     if 'amazon.com' in link.lower():
                         retailer = "Amazon"
@@ -249,7 +253,6 @@ if st.button("Search") and barcode and barcode.isdigit():
                     elif 'bestbuy.com' in link.lower():
                         retailer = "Best Buy"
                     else:
-                        # Try to get domain name as retailer
                         from urllib.parse import urlparse
                         domain = urlparse(link).netloc.replace('www.', '')
                         retailer = domain.split('.')[0].title()
