@@ -52,32 +52,30 @@ st.markdown("""
             color: white !important;
         }
         
-        /* Style button text to be white */
-        .stButton button {
+        /* Make all button text white */
+        button, .stButton > button, [data-testid="baseButton-secondary"] {
             color: white !important;
         }
         
-        /* Target button text specifically */
-        .stButton button p {
+        /* Style all button text elements to be white */
+        button p, button span, button div, 
+        .stButton button p, .stButton button span, .stButton button div,
+        [data-testid="baseButton-secondary"] p,
+        [data-testid="baseButton-secondary"] span,
+        [data-testid="baseButton-secondary"] div {
             color: white !important;
         }
         
-        /* Target button spans */
-        .stButton button span {
+        /* Target menu buttons specifically */
+        [data-testid="MenuButton"] span, 
+        [data-testid="SettingsButton"] span,
+        [data-testid="ShareButton"] span,
+        [data-testid="rerunButton"] span {
             color: white !important;
         }
         
-        /* Target any nested elements inside button */
-        .stButton button * {
-            color: white !important;
-        }
-        
-        /* Override any other button text colors */
-        button[kind="primary"] {
-            color: white !important;
-        }
-        
-        button[kind="primary"] span {
+        /* Target any nested elements in buttons */
+        button *, .stButton button *, [data-testid="baseButton-secondary"] * {
             color: white !important;
         }
     </style>
