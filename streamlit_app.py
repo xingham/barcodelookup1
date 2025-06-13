@@ -47,9 +47,9 @@ st.markdown("""
             color: #4B0082 !important;
         }
         
-        /* Style input text */
+        /* Style input text to be white */
         .stTextInput input {
-            color: #4B0082 !important;
+            color: white !important;
         }
         
         /* Style button text */
