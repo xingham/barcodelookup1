@@ -83,7 +83,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Debug mode
+# Debug mode - set to False to remove sidebar output
 DEBUG = False
 
 # Load API keys from secrets with debug info
@@ -115,9 +115,6 @@ def search_upcitemdb(barcode):
             'Accept-Language': 'en-US,en;q=0.5',
             'Connection': 'keep-alive'
         }
-        
-        if DEBUG:
-            st.sidebar.write(f"Searching UPC: {barcode}")
             
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
@@ -134,40 +131,18 @@ def search_upcitemdb(barcode):
                 text = variant.get_text(strip=True)
                 if text:
                     variants.append(text)
-                    # Use first variant as title if not already set
                     if not product_info.get('title'):
                         product_info['title'] = text
-                    if DEBUG:
-                        st.sidebar.write(f"Found variant: {text}")
             
             if variants:
                 product_info['variants'] = variants
-                
-        # Look for any details table
-        details_table = soup.find('table')
-        if details_table:
-            rows = details_table.find_all('tr')
-            for row in rows:
-                cols = row.find_all(['th', 'td'])
-                if len(cols) == 2:
-                    key = cols[0].get_text(strip=True)
-                    value = cols[1].get_text(strip=True)
-                    if key and value:
-                        product_info[key.lower()] = value
-                        if DEBUG:
-                            st.sidebar.write(f"Found detail: {key} = {value}")
 
         if product_info:
             products.append(product_info)
-            if DEBUG:
-                st.sidebar.success("Found product information")
-                st.sidebar.write(product_info)
             
         return products
         
     except Exception as e:
-        if DEBUG:
-            st.sidebar.error(f"Error: {str(e)}")
         return []
 
 def search_google(query):
