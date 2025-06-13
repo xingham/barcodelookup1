@@ -38,80 +38,69 @@ def search_upcitemdb(barcode):
     try:
         url = f'https://www.upcitemdb.com/upc/{barcode}'
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://www.upcitemdb.com/',
             'Connection': 'keep-alive'
         }
         
         if DEBUG:
-            st.sidebar.write(f"Fetching UPC data for: {barcode}")
-        
-        response = requests.get(url, headers=headers, timeout=15)
+            st.sidebar.write(f"Searching UPC: {barcode}")
+            
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
-        if DEBUG:
-            st.sidebar.write(f"UPC Response Status: {response.status_code}")
-        
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        results = []
+        products = []
         product_info = {}
         
-        # Try multiple selectors for product title
-        title = (
-            soup.find('h1', class_='product-name') or 
-            soup.find('h1', {'itemprop': 'name'}) or
-            soup.find('div', class_='product-title')
-        )
-        
+        # Try to find product name
+        title = soup.find('h1', class_='product-name')
         if title:
             product_info['title'] = title.text.strip()
             if DEBUG:
                 st.sidebar.write(f"Found title: {product_info['title']}")
         
-        # Try to find product details table
-        details_table = soup.find('table', class_='detail-table')
+        # Try to find product details
+        details = soup.find('div', class_='product-meta')
+        if details:
+            # Extract brand
+            brand = details.find('span', class_='brand')
+            if brand:
+                product_info['brand'] = brand.text.strip()
+            
+            # Extract description
+            desc = details.find('div', class_='note')
+            if desc:
+                product_info['description'] = desc.text.strip()
+        
+        # Extract product details from table
+        details_table = soup.find('table', class_='detail-list')
         if details_table:
             rows = details_table.find_all('tr')
             for row in rows:
                 cols = row.find_all(['th', 'td'])
                 if len(cols) == 2:
-                    key = cols[0].text.strip().lower()
+                    key = cols[0].text.strip()
                     value = cols[1].text.strip()
-                    product_info[key] = value
-        
-        # Look for description
-        description = (
-            soup.find('div', class_='detail-description') or
-            soup.find('div', {'itemprop': 'description'}) or
-            soup.find('div', class_='product-description')
-        )
-        
-        if description:
-            product_info['description'] = description.text.strip()
+                    if key and value:
+                        product_info[key.lower()] = value
         
         if product_info:
-            results.append(product_info)
+            products.append(product_info)
             if DEBUG:
-                st.sidebar.success("Product information found!")
+                st.sidebar.success("Found product information")
                 st.sidebar.write(product_info)
-        else:
-            if DEBUG:
-                st.sidebar.warning("No product info found in HTML")
-                # Save HTML for debugging
-                with open('debug_response.html', 'w') as f:
-                    f.write(response.text)
         
-        return results
+        return products
+        
     except requests.RequestException as e:
         if DEBUG:
-            st.sidebar.error(f"Request Error: {str(e)}")
+            st.sidebar.error(f"Request failed: {str(e)}")
         return []
     except Exception as e:
         if DEBUG:
-            st.sidebar.error(f"General Error: {str(e)}")
+            st.sidebar.error(f"Error: {str(e)}")
         return []
 
 def search_google(query):
