@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Barcode Product Lookup</title>
+    <style>
+        html, body { 
+            margin: 0;
+            min-height: 100vh;
+            background-color: #fff9c4; /* pastel yellow */
+            padding: 20px; 
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #9c27b0; /* darker purple */
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        #barcodeInput {
+            padding: 8px;
+            font-size: 16px;
+            width: 200px;
+            background-color: #f3e5f5; /* very light purple */
+            border: 1px solid #9c27b0;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 16px;
+            background-color: #9c27b0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #7b1fa2;
+        }
+        #result {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            overflow: hidden;  /* contains the float */
+            position: relative;
+        }
+
+        .result-section {
+            margin: 8px 0;  /* increased from 4px */
+            padding: 0;
+            background-color: #f3e5f5;
+            border-radius: 8px;
+        }
+
+        .result-header {
+            margin: 0;
+            padding: 4px 8px;  /* increased padding */
+            border-bottom: 1px solid #9c27b0;
+            color: #9c27b0;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .result-content {
+            margin: 0;
+            padding: 6px 8px;  /* increased padding */
+        }
+
+        .product-item, .search-result {
+            margin: 0;
+            padding: 2px 0;  /* added small vertical padding */
+        }
+
+        .search-result p {
+            margin: 2px 0;  /* added small margins */
+            padding: 0;
+            line-height: 1.2;  /* slightly increased */
+        }
+
+        .search-result a {
+            display: inline-block;  /* ensure link stays on same line */
+        }
+
+        .product-details {
+            margin: 0;
+            padding: 0;
+        }
+
+        .product-details p, .product-details ul {
+            margin: 4px 0;  /* increased from 2px */
+            padding: 0;
+            line-height: 1.4;  /* increased from 1.2 */
+        }
+
+        .product-details ul {
+            padding-left: 20px;
+            margin-top: 4px;  /* space after "Product Variants:" header */
+        }
+
+        .product-details li {
+            margin: 2px 0;  /* added vertical margin */
+            padding: 0;
+            line-height: 1.4;  /* increased from 1.2 */
+        }
+
+        .no-results {
+            padding: 10px;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .error-message {
+            padding: 10px;
+            color: #d32f2f;
+            text-align: center;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
+            color: #9c27b0;
+            font-style: italic;
+            font-size: 0.9em;
+            background-color: #fff9c4; /* matches body background */
+            border-top: 1px solid #9c27b0;
+        }
+
+        /* Add padding to prevent content from being hidden behind footer */
+        body {
+            padding-bottom: 50px;
+        }
+
+        .upc-link {
+            margin-top: 8px;  /* increased from 5px */
+            padding-top: 5px;
+            text-align: right;
+        }
+
+        .upc-link a {
+            color: #9c27b0;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .upc-link a:hover {
+            text-decoration: underline;
+        }
+
+        .quota-exceeded {
+            padding: 10px;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            background-color: #fff3e0;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Barcode Product Lookup</h1>
+    <div style="text-align: center;">
+        <input type="text" id="barcodeInput" placeholder="Enter barcode number..." />
+        <button onclick="lookupBarcode()">Search</button>
+    </div>
+    <div id="product-image-container" class="product-image" style="display: none;"></div>
+    <div id="result">
+        <div id="upcitemdb-results" class="result-section" style="display: none;">
+            <h2 class="result-header">UPCItemDB</h2>
+            <div class="result-content"></div>
+        </div>
+        <div id="google-results" class="result-section" style="display: none;">
+            <div class="result-header">Google Search Results</div>
+            <div class="result-content"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Brought to you by UPC Me Rollin'
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script>
+        // ...existing code...
+        
+        // In the Google results section
+        if (data.google && data.google.length > 0) {
+            const googleContent = document.querySelector('#google-results .result-content');
+            data.google.forEach(result => {
+                if (result.quota_exceeded) {
+                    googleContent.innerHTML = `
+                        <div class="quota-exceeded">
+                            <p>${result.snippet}</p>
+                        </div>`;
+                } else {
+                    // ...existing result display code...
+                }
+            });
+        }
+    </script>
+</body>
+</html>
