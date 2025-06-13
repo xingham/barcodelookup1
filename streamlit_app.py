@@ -52,9 +52,9 @@ st.markdown("""
             color: white !important;
         }
         
-        /* Style button text */
-        .stButton button {
-            color: #4B0082 !important;
+        /* Style button text to be white */
+        .stButton button, .stButton span {
+            color: white !important;
         }
     </style>
 """, unsafe_allow_html=True)
