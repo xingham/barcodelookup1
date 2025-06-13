@@ -27,9 +27,19 @@ st.markdown("""
             margin: 10px;
         }
         
-        /* Ensure text remains readable */
-        .stMarkdown {
-            color: #000000;
+        /* Make text dark purple */
+        .stMarkdown, .stSubheader, .stTitle {
+            color: #4B0082 !important;  /* indigo/dark purple */
+        }
+        
+        /* Make warning and info messages dark purple */
+        .stWarning, .stInfo, .stSuccess {
+            color: #4B0082 !important;
+        }
+        
+        /* Style footer text */
+        .footer {
+            color: #4B0082 !important;
         }
     </style>
 """, unsafe_allow_html=True)
