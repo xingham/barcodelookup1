@@ -185,3 +185,12 @@ if st.button("Search") and barcode and barcode.isdigit():
                     st.markdown(f"**{retailer}:** [{title}]({link})")
             else:
                 st.info("No Google results found")
+
+# Add footer with custom styling
+st.markdown("---")
+st.markdown(
+    "<div style='text-align: center; color: gray; padding: 20px;'>"
+    "Brought to you by UPC Me Rollin'"
+    "</div>", 
+    unsafe_allow_html=True
+)
