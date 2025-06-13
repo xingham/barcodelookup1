@@ -11,16 +11,38 @@ app = Flask(__name__)
 # Add multiple Google API credentials from different projects
 GOOGLE_API_KEYS = [
     'AIzaSyDJw29dPJH7sioK4bqUo-g0VGlfVXeJHso',  # first project
-    'AIzaSyCZf5f-9rIW0hm6BoykbHMo_0XkqCEp-jY'   # second project
+    'AIzaSyCZf5f-9rIW0hm6BoykbHMo_0XkqCEp-jY',  # second project
+    'AIzaSyBt-AH09r8dGcdWARB-u631khJXC8Cxvw4',  # third project
+    'AIzaSyBGlB4Ro1uGyfIcE7Jg8AknfdDslf9Rung',  # fourth project
+    'AIzaSyAJBtw7HcNUtmw6g3qql7g2EXkalq08hio',  # fifth project
+    'AIzaSyAeUgJyVvzJCOyBlqIZi_Au56AYq3sTF_w',  # sixth project
+    'AIzaSyBOqyxm-Uz6UxNdRf3pLAFEdo8p3a03uwc',  # seventh project
+    'AIzaSyC6YWL2Fp7aRj47A3Id3582SjfiGupQl1M',  # eighth project
+    'AIzaSyAa-17-N-baYH6c2twrasx4jRPkCOdx-Xo',  # ninth project
+    'AIzaSyA7aeu4w3thBNcNJnOoXqC4771YOyISPgw'   # tenth project
 ]
 GOOGLE_CSE_ID = '310b42d4bee37464e'
 current_key_index = 0
 
 def get_next_api_key():
     global current_key_index
-    key = GOOGLE_API_KEYS[current_key_index]
-    current_key_index = (current_key_index + 1) % len(GOOGLE_API_KEYS)
-    return key
+    starting_index = current_key_index
+    
+    while True:
+        key = GOOGLE_API_KEYS[current_key_index]
+        current_key_index = (current_key_index + 1) % len(GOOGLE_API_KEYS)
+        
+        # Try to validate the key
+        try:
+            service = build("customsearch", "v1", developerKey=key)
+            service.cse().list(q="test", cx=GOOGLE_CSE_ID, num=1).execute()
+            print(f"Using API key {current_key_index}")
+            return key
+        except googleapiclient_errors.HttpError as e:
+            if current_key_index == starting_index:
+                # We've tried all keys
+                raise Exception("All API keys are exhausted")
+            continue
 
 def search_google(query):
     try:
@@ -87,6 +109,12 @@ def search_upcitemdb(barcode):
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
         }
         response = requests.get(url, headers=headers, timeout=10)
+        
+        # Handle 404 more gracefully
+        if response.status_code == 404:
+            print(f"Product not found in UPCItemDB: {barcode}")
+            return []
+            
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         

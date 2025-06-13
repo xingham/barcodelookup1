@@ -2,9 +2,13 @@
 
 A web application that looks up product information using barcodes from UPCItemDB and Google search results.
 
-## Requirements
-- Python 3.x installed on your computer (install from python.org if needed)
-- Internet connection
+## Requirements (Required)
+- Python 3.x MUST be installed on your computer
+  - Download from: https://www.python.org/downloads/
+  - Click "Download Python 3.x.x"
+  - Run the installer
+  - Make sure to check "Add Python to PATH" during installation
+- Internet connection required
 
 ## How to Use
 
