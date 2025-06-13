@@ -142,15 +142,13 @@ if st.button("Search") and barcode and barcode.isdigit():
             if upc_results:
                 for item in upc_results:
                     st.write("---")
+                    # Only show title and variants
                     if 'title' in item:
                         st.markdown(f"**Product:** {item['title']}")
                     if 'variants' in item:
                         st.markdown("**Variants:**")
                         for variant in item['variants']:
                             st.markdown(f"- {variant}")
-                    for key, value in item.items():
-                        if key not in ['title', 'variants']:
-                            st.markdown(f"**{key.title()}:** {value}")
             else:
                 st.info("No UPC results found")
         
