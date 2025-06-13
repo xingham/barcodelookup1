@@ -1,25 +1,29 @@
 import streamlit as st
-from bs4 import BeautifulSoup
-import requests
 from googleapiclient.discovery import build
 from googleapiclient import errors as googleapiclient_errors
+from bs4 import BeautifulSoup
+import requests
 
-# Move API keys to Streamlit secrets
-if 'GOOGLE_API_KEYS' not in st.secrets:
-    st.error("Missing API keys in secrets. Please add them in Streamlit Cloud.")
-    GOOGLE_API_KEYS = []  # Empty list as fallback
-else:
-    GOOGLE_API_KEYS = st.secrets['GOOGLE_API_KEYS']
+# Initialize session state for API key rotation
+if 'current_key_index' not in st.session_state:
+    st.session_state.current_key_index = 0
 
-GOOGLE_CSE_ID = st.secrets.get('GOOGLE_CSE_ID', '310b42d4bee37464e')
-current_key_index = 0
+# Configure page
+st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
+
+# Load API keys from secrets
+try:
+    GOOGLE_API_KEYS = st.secrets["GOOGLE_API_KEYS"]
+    GOOGLE_CSE_ID = st.secrets["GOOGLE_CSE_ID"]
+except Exception as e:
+    st.error("Error loading API keys from secrets. Please check your configuration.")
+    st.stop()
 
 def get_next_api_key():
-    global current_key_index
     if not GOOGLE_API_KEYS:
         return None
-    key = GOOGLE_API_KEYS[current_key_index]
-    current_key_index = (current_key_index + 1) % len(GOOGLE_API_KEYS)
+    key = GOOGLE_API_KEYS[st.session_state.current_key_index]
+    st.session_state.current_key_index = (st.session_state.current_key_index + 1) % len(GOOGLE_API_KEYS)
     return key
 
 def search_google(query):
@@ -93,8 +97,6 @@ def search_upcitemdb(barcode):
         return []
 
 # Streamlit UI
-st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
-
 st.title("Barcode Product Lookup")
 
 # Input section with validation
