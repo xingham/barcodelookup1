@@ -39,4 +39,6 @@ ENV/
 ._*
 
 # Logs
-*.log
+*.log.streamlit/secrets.toml
+.streamlit/secrets.toml
+.streamlit/secrets.toml

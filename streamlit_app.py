@@ -4,41 +4,85 @@ import requests
 from googleapiclient.discovery import build
 from googleapiclient import errors as googleapiclient_errors
 
-# Copy existing API configuration
-GOOGLE_API_KEYS = [
-    'AIzaSyDJw29dPJH7sioK4bqUo-g0VGlfVXeJHso',  # first project
-    'AIzaSyCZf5f-9rIW0hm6BoykbHMo_0XkqCEp-jY',  # second project
-    'AIzaSyBt-AH09r8dGcdWARB-u631khJXC8Cxvw4',  # third project
-    'AIzaSyBGlB4Ro1uGyfIcE7Jg8AknfdDslf9Rung',  # fourth project
-    'AIzaSyAJBtw7HcNUtmw6g3qql7g2EXkalq08hio',  # fifth project
-    'AIzaSyAeUgJyVvzJCOyBlqIZi_Au56AYq3sTF_w',  # sixth project
-    'AIzaSyBOqyxm-Uz6UxNdRf3pLAFEdo8p3a03uwc',  # seventh project
-    'AIzaSyC6YWL2Fp7aRj47A3Id3582SjfiGupQl1M',  # eighth project
-    'AIzaSyAa-17-N-baYH6c2twrasx4jRPkCOdx-Xo',  # ninth project
-    'AIzaSyA7aeu4w3thBNcNJnOoXqC4771YOyISPgw'   # tenth project
-]
-GOOGLE_CSE_ID = '310b42d4bee37464e'
+# Move API keys to Streamlit secrets
+if 'GOOGLE_API_KEYS' not in st.secrets:
+    st.error("Missing API keys in secrets. Please add them in Streamlit Cloud.")
+    GOOGLE_API_KEYS = []  # Empty list as fallback
+else:
+    GOOGLE_API_KEYS = st.secrets['GOOGLE_API_KEYS']
+
+GOOGLE_CSE_ID = st.secrets.get('GOOGLE_CSE_ID', '310b42d4bee37464e')
 current_key_index = 0
 
-# Copy existing functions
 def get_next_api_key():
-    # ...existing get_next_api_key function...
+    global current_key_index
+    if not GOOGLE_API_KEYS:
+        return None
+    key = GOOGLE_API_KEYS[current_key_index]
+    current_key_index = (current_key_index + 1) % len(GOOGLE_API_KEYS)
+    return key
 
 def search_google(query):
-    # ...existing search_google function...
+    api_key = get_next_api_key()
+    if not api_key:
+        return [{'quota_exceeded': True, 'snippet': 'API keys not configured'}]
+    
+    try:
+        service = build('customsearch', 'v1', developerKey=api_key)
+        result = service.cse().list(q=query, cx=GOOGLE_CSE_ID).execute()
+        return result.get('items', [])
+    except googleapiclient_errors.HttpError as e:
+        if 'quota' in str(e).lower():
+            return [{'quota_exceeded': True, 'snippet': 'API quota exceeded'}]
+        return [{'error': True, 'snippet': str(e)}]
 
+@st.cache_data(ttl=3600)  # Cache results for 1 hour
 def search_upcitemdb(barcode):
-    # ...existing search_upcitemdb function...
+    try:
+        url = f'https://www.upcitemdb.com/upc/{barcode}'
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        results = []
+        product_info = {}
+        
+        # Extract product details
+        title = soup.find('h1', class_='product-name')
+        if title:
+            product_info['title'] = title.text.strip()
+            
+        brand = soup.find('span', class_='brand')
+        if brand:
+            product_info['brand'] = brand.text.strip()
+            
+        barcodes = soup.find_all('span', class_='upc-code')
+        if barcodes:
+            product_info['barcodes'] = [b.text.strip() for b in barcodes]
+            
+        variants = soup.find_all('div', class_='variant')
+        if variants:
+            product_info['variants'] = [v.text.strip() for v in variants]
+            
+        if product_info:
+            results.append(product_info)
+            
+        return results
+    except Exception as e:
+        st.error(f"Error fetching UPC data: {str(e)}")
+        return []
 
 # Streamlit UI
 st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
 
 st.title("Barcode Product Lookup")
 
-# Input section
+# Input section with validation
 barcode = st.text_input("Enter barcode number")
+if barcode and not barcode.isdigit():
+    st.warning("Please enter only numbers for the barcode")
 
-if st.button("Search"):
+if st.button("Search") and barcode and barcode.isdigit():
     if barcode:
         with st.spinner("Searching..."):
             # Search UPCItemDB
