@@ -310,38 +310,29 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Create Kroger UPC variant with quotes
-        kroger_upc = f'"{0}{query[:-1]}"'  # Add quotes around Kroger UPC
-        query_quoted = f'"{query}"'  # Add quotes around main UPC
-        
-        # Separate retail and database sites
-        retail_sites = "site:walmart.com OR site:target.com OR site:bestbuy.com OR site:kroger.com OR site:amazon.com"
-        
-        # Single search query with quoted UPCs
-        search_query = f'({query_quoted} OR {kroger_upc}) ({retail_sites})'
+        # Simple exact match query
+        search_query = f'"{query}"'  # Quote the UPC for exact matching
         
         if DEBUG:
             st.sidebar.write(f"Search Query: {search_query}")
         
-        # Make single API call with strict matching
+        # Make single API call with increased results
         result = service.cse().list(
             q=search_query,
             cx=GOOGLE_CSE_ID,
-            num=10,
+            num=20,  # Increased to 20 results
             cr="countryUS",
-            exactTerms=query,  # Keep exact UPC match
-            orTerms=f"{query} {query[:-1]}"  # Allow either full UPC or Kroger variant
+            exactTerms=query  # Keep exact UPC match
         ).execute()
         
         filtered_results = []
         if 'items' in result:
-            # First, add retail results
             for item in result['items']:
                 link = item.get('link', '').lower()
                 title = item.get('title', '')
                 
-                # Skip non-retail results
-                if 'barcodespider.com' in link:
+                # Skip barcode database sites
+                if any(site in link for site in ['barcodespider.com', 'barcodelookup.com', 'upcitemdb.com']):
                     continue
                 
                 # Clean up title
@@ -354,27 +345,8 @@ def search_google(query):
                     'description': item.get('snippet', ''),
                     'source': 'Google'
                 })
-            
-            # Then add a single barcodespider result if needed
-            barcode_spider_url = f'https://www.barcodespider.com/upc/{query}'
-            barcode_spider_result = {
-                'title': f'UPC {query} Lookup',
-                'link': barcode_spider_url,
-                'description': 'Barcode Spider product lookup',
-                'source': 'Google'
-            }
-            filtered_results.append(barcode_spider_result)
 
-        # Sort results by retailer priority
         if filtered_results:
-            filtered_results.sort(key=lambda x: next(
-                (i for i, site in enumerate([
-                    'walmart.com', 'target.com', 'bestbuy.com', 'kroger.com',
-                    'amazon.com', 'barcodespider.com'
-                ]) if site in x.get('link', '').lower()), 999
-            ))
-            
-            # Save filtered and sorted results
             save_search_results(query, filtered_results)
         
         return filtered_results
@@ -425,40 +397,11 @@ if st.button("Search") and barcode and barcode.isdigit():
             st.subheader("Google Search Results")
             google_results = search_google(barcode)
             if google_results:
-                current_category = None
                 for item in google_results:
-                    link = item.get('link', '').lower()
-                    
-                    # Determine category for display
-                    if any(store in link for store in ['walmart.com', 'target.com', 'bestbuy.com', 'kroger.com']):
-                        category = "Retail Stores"
-                    elif 'amazon.com' in link:
-                        category = "Online Marketplaces"
-                    elif 'barcodespider.com' in link:
-                        category = "Product Databases"
-                    else:
-                        category = "Other Sources"
-                        
-                    # Show category header if changed
-                    if category != current_category:
-                        if current_category is not None:
-                            st.write("---")
-                        if category == "Product Databases":
-                            st.markdown(f"<div class='category-header-secondary'>{category}</div>", unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"<div class='category-header-main'>{category}</div>", unsafe_allow_html=True)
-                        current_category = category
-                    
-                    # Display result with minimal spacing
+                    st.write("---")
                     title = item.get('title', 'No title')
-                    retailer = next(
-                        (name.replace('.com', '').title() for name in 
-                         ['walmart.com', 'target.com', 'bestbuy.com', 'kroger.com', 
-                          'amazon.com', 'barcodespider.com'] 
-                         if name in link.lower()),
-                        "Other"
-                    )
-                    st.markdown(f"**{retailer}:** [{title}]({link})")
+                    link = item.get('link', '#')
+                    st.markdown(f"[{title}]({link})")
             else:
                 st.info("No Google results found")
 
