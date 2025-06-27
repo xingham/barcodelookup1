@@ -402,6 +402,15 @@ if st.button("Search") and barcode and barcode.isdigit():
                     st.write("---")
                     title = item.get('title', 'No title')
                     link = item.get('link', '#')
+                    
+                    # Extract domain from link and format it
+                    from urllib.parse import urlparse
+                    domain = urlparse(link).netloc.replace('www.', '')
+                    domain = domain.split('.')[0].title()
+                    
+                    # Display domain header and result
+                    st.markdown(f"<div style='font-weight: bold; color: #4B0082; margin-bottom: 5px;'>{domain}</div>", 
+                              unsafe_allow_html=True)
                     st.markdown(f"[{title}]({link})")
             else:
                 st.info("No Google results found")
