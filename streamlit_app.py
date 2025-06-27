@@ -3,6 +3,9 @@ from googleapiclient.discovery import build
 from googleapiclient import errors as googleapiclient_errors
 from bs4 import BeautifulSoup
 import requests
+from datetime import datetime
+import json
+import os
 
 # Initialize session state for API key rotation
 if 'current_key_index' not in st.session_state:
@@ -104,6 +107,39 @@ st.markdown("""
         [data-baseweb="menu"] svg {
             color: white !important;
         }
+        
+        /* Reduce spacing between headers and content */
+        .stMarkdown h1 {
+            margin-bottom: 0.5rem !important;
+        }
+        .stMarkdown h2 {
+            margin-bottom: 0.3rem !important;
+        }
+        .stMarkdown h3 {
+            margin-bottom: 0.2rem !important;
+            margin-top: 0.5rem !important;
+        }
+        
+        /* Reduce spacing between dividers */
+        hr {
+            margin: 0.5rem 0 !important;
+        }
+        
+        /* Adjust column padding */
+        [data-testid="column"] {
+            padding: 10px !important;
+        }
+        
+        /* Make columns equal width and height */
+        .stColumns [data-testid="column"] {
+            width: 50% !important;
+            flex: 1 1 50% !important;
+        }
+        
+        /* Reduce spacing between items */
+        .stMarkdown p {
+            margin-bottom: 0.2rem !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -169,8 +205,38 @@ def search_upcitemdb(barcode):
     except Exception as e:
         return []
 
+def save_search_results(barcode, results):
+    """Save search results to a JSON file"""
+    cache_dir = "search_cache"
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+        
+    cache_file = os.path.join(cache_dir, f"{barcode}.json")
+    cache_data = {
+        "timestamp": datetime.now().isoformat(),
+        "results": results
+    }
+    
+    with open(cache_file, "w") as f:
+        json.dump(cache_data, f)
+
+def get_cached_results(barcode):
+    """Get cached results if they exist"""
+    cache_file = os.path.join("search_cache", f"{barcode}.json")
+    if os.path.exists(cache_file):
+        with open(cache_file) as f:
+            return json.load(f)["results"]
+    return None
+
 def search_google(query):
     try:
+        # Check cache first
+        cached_results = get_cached_results(query)
+        if cached_results:
+            if DEBUG:
+                st.sidebar.info("Using cached results")
+            return cached_results
+
         api_key = get_next_api_key()
         if not api_key:
             if DEBUG:
@@ -229,32 +295,66 @@ def search_google(query):
                 return []
             
             filtered_results = []
-            for item in result['items']:
+            if 'items' in result:
+                for item in result['items']:
+                    link = item.get('link', '').lower()
+                    title = item.get('title', '')
+                    
+                    # Clean up title
+                    for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
+                        title = title.replace(suffix, '')
+                    
+                    filtered_results.append({
+                        'title': title,
+                        'link': item.get('link', ''),
+                        'description': item.get('snippet', ''),
+                        'source': 'Google'
+                    })
+
+            # Save all results before sorting
+            if filtered_results:
+                save_search_results(query, filtered_results)
+
+            # Categorize results
+            def categorize_result(link):
+                link = link.lower()
+                # Brick and mortar stores
+                if any(store in link for store in ['walmart.com', 'target.com', 'bestbuy.com', 'kroger.com']):
+                    return 1, "brick_and_mortar"
+                # Online marketplaces
+                elif 'amazon.com' in link:
+                    return 2, "marketplace"
+                # Barcode databases
+                elif 'barcodespider.com' in link:
+                    return 3, "database"
+                # Other sites
+                return 4, "other"
+
+            # Sort results by category and then by specific retailer
+            def get_sort_key(item):
                 link = item.get('link', '').lower()
-                title = item.get('title', '')
+                category_priority, category = categorize_result(link)
                 
-                # Clean up title
-                for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
-                    title = title.replace(suffix, '')
+                # Retailer-specific priority within categories
+                retailer_priority = {
+                    'walmart.com': 1,
+                    'target.com': 2,
+                    'bestbuy.com': 3,
+                    'kroger.com': 4,
+                    'amazon.com': 1,  # Top priority in marketplace category
+                    'barcodespider.com': 1  # Top priority in database category
+                }
                 
-                filtered_results.append({
-                    'title': title,
-                    'link': item.get('link', ''),
-                    'description': item.get('snippet', '')
-                })
-            
-            # Sort results
-            filtered_results.sort(
-                key=lambda x: next(
-                    (i for i, site in enumerate(['walmart.com', 'target.com', 'bestbuy.com', 
-                                                 'kroger.com', 'amazon.com', 'barcodespider.com']) 
-                     if site in x['link'].lower()), 
-                    999
-                )
-            )
-            
+                for retailer, priority in retailer_priority.items():
+                    if retailer in link:
+                        return category_priority, priority
+                        
+                return category_priority, 999
+
+            # Sort the results
+            filtered_results.sort(key=get_sort_key)
             return filtered_results
-            
+
         except googleapiclient_errors.HttpError as api_error:
             if DEBUG:
                 st.sidebar.error(f"API Error: {str(api_error)}")
@@ -285,68 +385,64 @@ if barcode:
 # Search button with progress indicators
 if st.button("Search") and barcode and barcode.isdigit():
     with st.spinner("Searching databases..."):
-        # Create container for results
-        results_container = st.container()
+        # Create two equal columns
+        col1, col2 = st.columns(2, gap="small")
         
-        # Use columns inside the container
-        with results_container:
-            col1, col2 = st.columns(2)
-            
-            # First column - UPC Database Results
-            with col1:
-                st.subheader("UPC Database Results")
-                upc_results = search_upcitemdb(barcode)
-                if upc_results:
-                    for item in upc_results:
-                        st.write("---")
-                        upc_link = f"https://www.upcitemdb.com/upc/{barcode}"
-                        if 'title' in item:
-                            st.markdown(f"**Product:** [{item['title']}]({upc_link})")
-                        if 'variants' in item:
-                            st.markdown("**Variants:**")
-                            for variant in item['variants']:
-                                st.markdown(f"- {variant}")
-                else:
-                    st.info("No UPC results found")
+        # First column - UPCItemDB Results
+        with col1:
+            st.subheader("UPCItemDB")
+            upc_results = search_upcitemdb(barcode)
+            if upc_results:
+                for item in upc_results:
+                    st.write("---")
+                    upc_link = f"https://www.upcitemdb.com/upc/{barcode}"
+                    if 'title' in item:
+                        st.markdown(f"**Product:** [{item['title']}]({upc_link})")
+                    if 'variants' in item:
+                        st.markdown("**Variants:**")
+                        for variant in item['variants']:
+                            st.write(f"- {variant}")
+            else:
+                st.info("No UPC results found")
 
-            # Second column - Google Search Results
-            with col2:
-                st.subheader("Google Search Results")
-                google_results = search_google(barcode)
-                if google_results:
-                    # Sort results by retailer priority
-                    def get_retailer_priority(link):
-                        """Return a tuple of (priority, retailer_name) for sorting"""
-                        link = link.lower()
-                        if 'walmart.com' in link:
-                            return (1, "Walmart")
-                        elif 'target.com' in link:
-                            return (2, "Target")
-                        elif 'bestbuy.com' in link:
-                            return (3, "Best Buy")
-                        elif 'kroger.com' in link:
-                            return (4, "Kroger")  # Add Kroger
-                        elif 'amazon.com' in link:
-                            return (5, "Amazon")
-                        elif 'barcodespider.com' in link:
-                            return (6, "Barcode Spider")
-                        else:
-                            from urllib.parse import urlparse
-                            domain = urlparse(link).netloc.replace('www.', '')
-                            return (7, domain.split('.')[0].title())
-
-                    sorted_results = sorted(google_results, 
-                                          key=lambda x: get_retailer_priority(x.get('link', '')))
+        # Second column - Google Search Results
+        with col2:
+            st.subheader("Google Search Results")
+            google_results = search_google(barcode)
+            if google_results:
+                current_category = None
+                for item in google_results:
+                    link = item.get('link', '').lower()
                     
-                    for item in sorted_results:
-                        st.write("---")
-                        title = item.get('title', 'No title')
-                        link = item.get('link', '#')
-                        priority, retailer = get_retailer_priority(link)
+                    # Determine category for display
+                    if any(store in link for store in ['walmart.com', 'target.com', 'bestbuy.com', 'kroger.com']):
+                        category = "Retail Stores"
+                    elif 'amazon.com' in link:
+                        category = "Online Marketplaces"
+                    elif 'barcodespider.com' in link:
+                        category = "Product Databases"
+                    else:
+                        category = "Other Sources"
                         
-                        st.markdown(f"**{retailer}:** [{title}]({link})")
-                else:
-                    st.info("No Google results found")
+                    # Show category header if changed
+                    if category != current_category:
+                        if current_category is not None:
+                            st.write("---")
+                        st.markdown(f"### {category}")
+                        current_category = category
+                    
+                    # Display result with minimal spacing
+                    title = item.get('title', 'No title')
+                    retailer = next(
+                        (name.replace('.com', '').title() for name in 
+                         ['walmart.com', 'target.com', 'bestbuy.com', 'kroger.com', 
+                          'amazon.com', 'barcodespider.com'] 
+                         if name in link.lower()),
+                        "Other"
+                    )
+                    st.markdown(f"**{retailer}:** [{title}]({link})")
+            else:
+                st.info("No Google results found")
 
 # Add footer with custom styling
 st.markdown("---")
