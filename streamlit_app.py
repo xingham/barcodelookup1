@@ -179,63 +179,94 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Add excluded sites and domains
-        excluded_sites = [
-            "-site:github.com",
-            "-site:gist.github.com",
-            # Exclude international domains
-            "-site:*.ca",     # Canada
-            "-site:*.au",     # Australia
-            "-site:*.uk",     # United Kingdom
-            "-site:*.fr",     # France
-            "-site:*.de",     # Germany
-            "-site:*.jp",     # Japan
-            "-site:*.mx",     # Mexico
-            "-site:*.br",     # Brazil
-            "-site:*.es"      # Spain
-        ]
-        
-        full_query = f"{query} {' '.join(excluded_sites)}"
-        
-        # Execute search with excluded sites
-        result = service.cse().list(
-            q=full_query,
-            cx=GOOGLE_CSE_ID,
-            num=10,
-            # Focus on US retail sites
-            siteSearch="walmart.com,target.com,amazon.com,bestbuy.com",
-            siteSearchFilter="i",  # Include only these sites
-            cr="countryUS"    # Restrict to US results
-        ).execute()
+        # Simplify search query first for debugging
+        simple_query = f"{query}"
         
         if DEBUG:
-            st.sidebar.write(f"Google API Response: {len(result.get('items', []))} results")
+            st.sidebar.write(f"Using API Key: {api_key[:5]}...")
+            st.sidebar.write(f"Search Query: {simple_query}")
         
-        # Additional filtering of results
-        filtered_results = []
-        for item in result.get('items', []):
-            link = item.get('link', '').lower()
-            # Skip if link contains excluded domains
-            if any(x in link for x in [
-                'github.com',
-                '.ca/',
-                '.au/',
-                '.uk/',
-                '.fr/',
-                '.de/',
-                '.jp/',
-                '.mx/',
-                '.br/',
-                '.es/'
-            ]):
-                continue
-            filtered_results.append(item)
+        try:
+            # Test API with simple query first
+            result = service.cse().list(
+                q=simple_query,
+                cx=GOOGLE_CSE_ID,
+                num=10
+            ).execute()
             
-        return filtered_results
-        
+            if DEBUG:
+                st.sidebar.write(f"Raw API Response Keys: {result.keys()}")
+                st.sidebar.write(f"Total Results: {result.get('searchInformation', {}).get('totalResults', 0)}")
+            
+            # If simple query works, try full search
+            priority_sites = [
+                "site:walmart.com",
+                "site:target.com",
+                "site:bestbuy.com",
+                "site:kroger.com",
+                "site:amazon.com",
+                "site:barcodespider.com"
+            ]
+            
+            sites_query = " OR ".join(priority_sites)
+            kroger_upc = '0' + query[:-1]
+            full_query = f"({query} OR {kroger_upc}) ({sites_query})"
+            
+            if DEBUG:
+                st.sidebar.write(f"Full Query: {full_query}")
+            
+            result = service.cse().list(
+                q=full_query,
+                cx=GOOGLE_CSE_ID,
+                num=10,
+                cr="countryUS"
+            ).execute()
+            
+            if 'items' not in result:
+                if DEBUG:
+                    st.sidebar.warning("No items found in response")
+                    st.sidebar.write("Response:", result)
+                return []
+            
+            filtered_results = []
+            for item in result['items']:
+                link = item.get('link', '').lower()
+                title = item.get('title', '')
+                
+                # Clean up title
+                for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
+                    title = title.replace(suffix, '')
+                
+                filtered_results.append({
+                    'title': title,
+                    'link': item.get('link', ''),
+                    'description': item.get('snippet', '')
+                })
+            
+            # Sort results
+            filtered_results.sort(
+                key=lambda x: next(
+                    (i for i, site in enumerate(['walmart.com', 'target.com', 'bestbuy.com', 
+                                                 'kroger.com', 'amazon.com', 'barcodespider.com']) 
+                     if site in x['link'].lower()), 
+                    999
+                )
+            )
+            
+            return filtered_results
+            
+        except googleapiclient_errors.HttpError as api_error:
+            if DEBUG:
+                st.sidebar.error(f"API Error: {str(api_error)}")
+            if 'quota' in str(api_error).lower():
+                st.warning("Search quota exceeded. Please try again later.")
+            return []
+            
     except Exception as e:
         if DEBUG:
-            st.sidebar.error(f"Google Search Error: {str(e)}")
+            st.sidebar.error(f"Search Error: {str(e)}")
+            import traceback
+            st.sidebar.code(traceback.format_exc())
         return []
 
 # Main UI
@@ -283,27 +314,35 @@ if st.button("Search") and barcode and barcode.isdigit():
                 st.subheader("Google Search Results")
                 google_results = search_google(barcode)
                 if google_results:
-                    for item in google_results:
-                        st.write("---")
-                        title = item.get('title', 'No title')
-                        link = item.get('link', '#')
-                        
-                        # Extract retailer name
-                        retailer = ""
-                        if 'amazon.com' in link.lower():
-                            retailer = "Amazon"
-                        elif 'walmart.com' in link.lower():
-                            retailer = "Walmart"
-                        elif 'target.com' in link.lower():
-                            retailer = "Target"
-                        elif 'ebay.com' in link.lower():
-                            retailer = "eBay"
-                        elif 'bestbuy.com' in link.lower():
-                            retailer = "Best Buy"
+                    # Sort results by retailer priority
+                    def get_retailer_priority(link):
+                        """Return a tuple of (priority, retailer_name) for sorting"""
+                        link = link.lower()
+                        if 'walmart.com' in link:
+                            return (1, "Walmart")
+                        elif 'target.com' in link:
+                            return (2, "Target")
+                        elif 'bestbuy.com' in link:
+                            return (3, "Best Buy")
+                        elif 'kroger.com' in link:
+                            return (4, "Kroger")  # Add Kroger
+                        elif 'amazon.com' in link:
+                            return (5, "Amazon")
+                        elif 'barcodespider.com' in link:
+                            return (6, "Barcode Spider")
                         else:
                             from urllib.parse import urlparse
                             domain = urlparse(link).netloc.replace('www.', '')
-                            retailer = domain.split('.')[0].title()
+                            return (7, domain.split('.')[0].title())
+
+                    sorted_results = sorted(google_results, 
+                                          key=lambda x: get_retailer_priority(x.get('link', '')))
+                    
+                    for item in sorted_results:
+                        st.write("---")
+                        title = item.get('title', 'No title')
+                        link = item.get('link', '#')
+                        priority, retailer = get_retailer_priority(link)
                         
                         st.markdown(f"**{retailer}:** [{title}]({link})")
                 else:
