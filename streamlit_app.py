@@ -192,9 +192,17 @@ st.markdown("""
         }
         
         .category-header-secondary {
-            font-size: 0.9em !important;
+            font-size: 1.2em !important;  /* Changed from 0.9em to match main */
             font-weight: bold !important;
-            margin-bottom: 0.2rem !important;
+            margin-bottom: 0.3rem !important;  /* Changed to match main */
+            color: #4B0082 !important;
+        }
+        
+        /* Add style for variants header */
+        .variants-header {
+            font-size: 1.2em !important;
+            font-weight: bold !important;
+            margin-bottom: 0.3rem !important;
             color: #4B0082 !important;
         }
     </style>
@@ -456,7 +464,7 @@ if st.button("Search") and barcode and barcode.isdigit():
                     if 'title' in item:
                         st.markdown(f"**Product:** [{item['title']}]({upc_link})")
                     if 'variants' in item:
-                        st.markdown("**Variants:**")
+                        st.markdown("<div class='variants-header'>Variants:</div>", unsafe_allow_html=True)
                         for variant in item['variants']:
                             st.write(f"- {variant}")
             else:
