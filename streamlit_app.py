@@ -310,61 +310,44 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Simplify search query first for debugging
-        simple_query = f"{query}"
+        # Create Kroger UPC variant
+        kroger_upc = '0' + query[:-1]
+        
+        # Build exact match query with priority sites
+        priority_sites = [
+            "site:walmart.com",
+            "site:target.com",
+            "site:bestbuy.com",
+            "site:kroger.com",
+            "site:amazon.com",
+            "site:barcodespider.com"
+        ]
+        
+        sites_query = " OR ".join(priority_sites)
+        # Use exact match operator for UPC
+        full_query = f'"{query}" OR "{kroger_upc}" ({sites_query})'
         
         if DEBUG:
-            st.sidebar.write(f"Using API Key: {api_key[:5]}...")
-            st.sidebar.write(f"Search Query: {simple_query}")
+            st.sidebar.write(f"Search Query: {full_query}")
         
-        try:
-            # Test API with simple query first
-            result = service.cse().list(
-                q=simple_query,
-                cx=GOOGLE_CSE_ID,
-                num=10
-            ).execute()
-            
-            if DEBUG:
-                st.sidebar.write(f"Raw API Response Keys: {result.keys()}")
-                st.sidebar.write(f"Total Results: {result.get('searchInformation', {}).get('totalResults', 0)}")
-            
-            # If simple query works, try full search
-            priority_sites = [
-                "site:walmart.com",
-                "site:target.com",
-                "site:bestbuy.com",
-                "site:kroger.com",
-                "site:amazon.com",
-                "site:barcodespider.com"
-            ]
-            
-            sites_query = " OR ".join(priority_sites)
-            kroger_upc = '0' + query[:-1]
-            full_query = f"({query} OR {kroger_upc}) ({sites_query})"
-            
-            if DEBUG:
-                st.sidebar.write(f"Full Query: {full_query}")
-            
-            result = service.cse().list(
-                q=full_query,
-                cx=GOOGLE_CSE_ID,
-                num=10,
-                cr="countryUS"
-            ).execute()
-            
-            if 'items' not in result:
-                if DEBUG:
-                    st.sidebar.warning("No items found in response")
-                    st.sidebar.write("Response:", result)
-                return []
-            
-            filtered_results = []
-            if 'items' in result:
-                for item in result['items']:
-                    link = item.get('link', '').lower()
-                    title = item.get('title', '')
-                    
+        # Single API call with exact matching
+        result = service.cse().list(
+            q=full_query,
+            cx=GOOGLE_CSE_ID,
+            num=10,
+            cr="countryUS",
+            exactTerms=query  # Force exact UPC match
+        ).execute()
+        
+        filtered_results = []
+        if 'items' in result:
+            for item in result['items']:
+                link = item.get('link', '').lower()
+                title = item.get('title', '')
+                snippet = item.get('snippet', '')
+                
+                # Only include results that contain the exact UPC
+                if query in title or query in snippet or query in link:
                     # Clean up title
                     for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
                         title = title.replace(suffix, '')
@@ -372,66 +355,27 @@ def search_google(query):
                     filtered_results.append({
                         'title': title,
                         'link': item.get('link', ''),
-                        'description': item.get('snippet', ''),
+                        'description': snippet,
                         'source': 'Google'
                     })
 
-            # Save all results before sorting
-            if filtered_results:
-                save_search_results(query, filtered_results)
-
-            # Categorize results
-            def categorize_result(link):
-                link = link.lower()
-                # Brick and mortar stores
-                if any(store in link for store in ['walmart.com', 'target.com', 'bestbuy.com', 'kroger.com']):
-                    return 1, "brick_and_mortar"
-                # Online marketplaces
-                elif 'amazon.com' in link:
-                    return 2, "marketplace"
-                # Barcode databases
-                elif 'barcodespider.com' in link:
-                    return 3, "database"
-                # Other sites
-                return 4, "other"
-
-            # Sort results by category and then by specific retailer
-            def get_sort_key(item):
-                link = item.get('link', '').lower()
-                category_priority, category = categorize_result(link)
-                
-                # Retailer-specific priority within categories
-                retailer_priority = {
-                    'walmart.com': 1,
-                    'target.com': 2,
-                    'bestbuy.com': 3,
-                    'kroger.com': 4,
-                    'amazon.com': 1,  # Top priority in marketplace category
-                    'barcodespider.com': 1  # Top priority in database category
-                }
-                
-                for retailer, priority in retailer_priority.items():
-                    if retailer in link:
-                        return category_priority, priority
-                        
-                return category_priority, 999
-
-            # Sort the results
-            filtered_results.sort(key=get_sort_key)
-            return filtered_results
-
-        except googleapiclient_errors.HttpError as api_error:
-            if DEBUG:
-                st.sidebar.error(f"API Error: {str(api_error)}")
-            if 'quota' in str(api_error).lower():
-                st.warning("Search quota exceeded. Please try again later.")
-            return []
+        # Save and sort results
+        if filtered_results:
+            save_search_results(query, filtered_results)
             
+            # Sort by retailer priority
+            filtered_results.sort(key=lambda x: next(
+                (i for i, site in enumerate([
+                    'walmart.com', 'target.com', 'bestbuy.com', 'kroger.com',
+                    'amazon.com', 'barcodespider.com'
+                ]) if site in x['link'].lower()), 999
+            ))
+            
+        return filtered_results
+
     except Exception as e:
         if DEBUG:
             st.sidebar.error(f"Search Error: {str(e)}")
-            import traceback
-            st.sidebar.code(traceback.format_exc())
         return []
 
 # Main UI
