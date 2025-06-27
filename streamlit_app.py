@@ -310,25 +310,27 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Create Kroger UPC variant
-        kroger_upc = '0' + query[:-1]
+        # Create Kroger UPC variant with quotes
+        kroger_upc = f'"{0}{query[:-1]}"'  # Add quotes around Kroger UPC
+        query_quoted = f'"{query}"'  # Add quotes around main UPC
         
         # Separate retail and database sites
         retail_sites = "site:walmart.com OR site:target.com OR site:bestbuy.com OR site:kroger.com OR site:amazon.com"
         
-        # Single search query focusing on retail results first
-        search_query = f'"{query}" ({retail_sites})'
+        # Single search query with quoted UPCs
+        search_query = f'({query_quoted} OR {kroger_upc}) ({retail_sites})'
         
         if DEBUG:
             st.sidebar.write(f"Search Query: {search_query}")
         
-        # Make single API call
+        # Make single API call with strict matching
         result = service.cse().list(
             q=search_query,
             cx=GOOGLE_CSE_ID,
             num=10,
             cr="countryUS",
-            exactTerms=query  # Force exact UPC match
+            exactTerms=query,  # Keep exact UPC match
+            orTerms=f"{query} {query[:-1]}"  # Allow either full UPC or Kroger variant
         ).execute()
         
         filtered_results = []
