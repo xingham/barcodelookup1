@@ -140,6 +140,63 @@ st.markdown("""
         .stMarkdown p {
             margin-bottom: 0.2rem !important;
         }
+
+        /* Column styling */
+        .stColumns {
+            gap: 1rem !important;
+        }
+        
+        [data-testid="column"] {
+            background-color: #e6e6fa;
+            border-radius: 10px;
+            padding: 1rem !important;
+            min-width: 45% !important;
+            margin: 0 !important;
+        }
+        
+        /* Force equal width columns */
+        .row-widget.stColumns {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: stretch !important;
+        }
+        
+        /* Remove any default margins that might cause spacing */
+        .block-container {
+            padding: 2rem 1rem !important;
+            max-width: 100% !important;
+        }
+        
+        /* Ensure content fills column width */
+        [data-testid="column"] > div {
+            width: 100% !important;
+        }
+
+        /* Remove extra spacing from markdown elements */
+        .stMarkdown {
+            margin: 0 !important;
+        }
+        
+        /* Adjust subheader spacing */
+        .stSubheader {
+            margin-bottom: 0.5rem !important;
+        }
+        
+        /* Category header styles */
+        .category-header-main {
+            font-size: 1.2em !important;
+            font-weight: bold !important;
+            margin-bottom: 0.3rem !important;
+            color: #4B0082 !important;
+        }
+        
+        .category-header-secondary {
+            font-size: 0.9em !important;
+            font-weight: bold !important;
+            margin-bottom: 0.2rem !important;
+            color: #4B0082 !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -386,7 +443,7 @@ if barcode:
 if st.button("Search") and barcode and barcode.isdigit():
     with st.spinner("Searching databases..."):
         # Create two equal columns
-        col1, col2 = st.columns(2, gap="small")
+        col1, col2 = st.columns([1, 1])  # Equal width columns
         
         # First column - UPCItemDB Results
         with col1:
@@ -428,7 +485,10 @@ if st.button("Search") and barcode and barcode.isdigit():
                     if category != current_category:
                         if current_category is not None:
                             st.write("---")
-                        st.markdown(f"### {category}")
+                        if category == "Product Databases":
+                            st.markdown(f"<div class='category-header-secondary'>{category}</div>", unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"<div class='category-header-main'>{category}</div>", unsafe_allow_html=True)
                         current_category = category
                     
                     # Display result with minimal spacing
