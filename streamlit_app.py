@@ -313,64 +313,68 @@ def search_google(query):
         # Create Kroger UPC variant
         kroger_upc = '0' + query[:-1]
         
-        # Build exact match query with priority sites
-        priority_sites = [
-            "site:walmart.com",
-            "site:target.com",
-            "site:bestbuy.com",
-            "site:kroger.com",
-            "site:amazon.com",
-            "site:barcodespider.com"
-        ]
-        
-        sites_query = " OR ".join(priority_sites)
-        # Use exact match operator for UPC
-        full_query = f'"{query}" OR "{kroger_upc}" ({sites_query})'
+        # Single search query with exact UPC matching
+        search_query = f'"{query}" OR "{kroger_upc}" (site:walmart.com OR site:target.com OR site:bestbuy.com OR site:kroger.com OR site:amazon.com OR site:barcodespider.com)'
         
         if DEBUG:
-            st.sidebar.write(f"Search Query: {full_query}")
+            st.sidebar.write(f"Search Query: {search_query}")
         
-        # Single API call with exact matching
+        # Make single API call
         result = service.cse().list(
-            q=full_query,
+            q=search_query,
             cx=GOOGLE_CSE_ID,
             num=10,
             cr="countryUS",
-            exactTerms=query  # Force exact UPC match
+            exactTerms=query,  # Force exact UPC match
+            sort="date:d"  # Get newest results first
         ).execute()
         
         filtered_results = []
         if 'items' in result:
+            seen_upcs = set()  # Track seen UPCs to avoid duplicates
+            
             for item in result['items']:
                 link = item.get('link', '').lower()
                 title = item.get('title', '')
                 snippet = item.get('snippet', '')
                 
-                # Only include results that contain the exact UPC
-                if query in title or query in snippet or query in link:
-                    # Clean up title
-                    for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
-                        title = title.replace(suffix, '')
+                # For barcodespider, only accept exact UPC match
+                if 'barcodespider.com' in link:
+                    if not any(f'UPC {query}' in s for s in [title, snippet, link]):
+                        continue
                     
-                    filtered_results.append({
-                        'title': title,
-                        'link': item.get('link', ''),
-                        'description': snippet,
-                        'source': 'Google'
-                    })
+                # Extract UPC from title/snippet for barcodespider results
+                if 'UPC ' in title:
+                    result_upc = title.split('UPC ')[1].split()[0]
+                    if result_upc != query:
+                        continue
+                    if result_upc in seen_upcs:
+                        continue
+                    seen_upcs.add(result_upc)
+                
+                # Clean up title
+                for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
+                    title = title.replace(suffix, '')
+                
+                filtered_results.append({
+                    'title': title,
+                    'link': item.get('link', ''),
+                    'description': snippet,
+                    'source': 'Google'
+                })
 
-        # Save and sort results
+        # Sort results by retailer priority
         if filtered_results:
-            save_search_results(query, filtered_results)
-            
-            # Sort by retailer priority
             filtered_results.sort(key=lambda x: next(
                 (i for i, site in enumerate([
                     'walmart.com', 'target.com', 'bestbuy.com', 'kroger.com',
                     'amazon.com', 'barcodespider.com'
-                ]) if site in x['link'].lower()), 999
+                ]) if site in x.get('link', '').lower()), 999
             ))
             
+            # Save filtered and sorted results
+            save_search_results(query, filtered_results)
+        
         return filtered_results
 
     except Exception as e:
