@@ -313,8 +313,11 @@ def search_google(query):
         # Create Kroger UPC variant
         kroger_upc = '0' + query[:-1]
         
-        # Single search query with exact UPC matching
-        search_query = f'"{query}" OR "{kroger_upc}" (site:walmart.com OR site:target.com OR site:bestbuy.com OR site:kroger.com OR site:amazon.com OR site:barcodespider.com)'
+        # Separate retail and database sites
+        retail_sites = "site:walmart.com OR site:target.com OR site:bestbuy.com OR site:kroger.com OR site:amazon.com"
+        
+        # Single search query focusing on retail results first
+        search_query = f'"{query}" ({retail_sites})'
         
         if DEBUG:
             st.sidebar.write(f"Search Query: {search_query}")
@@ -325,32 +328,19 @@ def search_google(query):
             cx=GOOGLE_CSE_ID,
             num=10,
             cr="countryUS",
-            exactTerms=query,  # Force exact UPC match
-            sort="date:d"  # Get newest results first
+            exactTerms=query  # Force exact UPC match
         ).execute()
         
         filtered_results = []
         if 'items' in result:
-            seen_upcs = set()  # Track seen UPCs to avoid duplicates
-            
+            # First, add retail results
             for item in result['items']:
                 link = item.get('link', '').lower()
                 title = item.get('title', '')
-                snippet = item.get('snippet', '')
                 
-                # For barcodespider, only accept exact UPC match
+                # Skip non-retail results
                 if 'barcodespider.com' in link:
-                    if not any(f'UPC {query}' in s for s in [title, snippet, link]):
-                        continue
-                    
-                # Extract UPC from title/snippet for barcodespider results
-                if 'UPC ' in title:
-                    result_upc = title.split('UPC ')[1].split()[0]
-                    if result_upc != query:
-                        continue
-                    if result_upc in seen_upcs:
-                        continue
-                    seen_upcs.add(result_upc)
+                    continue
                 
                 # Clean up title
                 for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
@@ -359,9 +349,19 @@ def search_google(query):
                 filtered_results.append({
                     'title': title,
                     'link': item.get('link', ''),
-                    'description': snippet,
+                    'description': item.get('snippet', ''),
                     'source': 'Google'
                 })
+            
+            # Then add a single barcodespider result if needed
+            barcode_spider_url = f'https://www.barcodespider.com/upc/{query}'
+            barcode_spider_result = {
+                'title': f'UPC {query} Lookup',
+                'link': barcode_spider_url,
+                'description': 'Barcode Spider product lookup',
+                'source': 'Google'
+            }
+            filtered_results.append(barcode_spider_result)
 
         # Sort results by retailer priority
         if filtered_results:
