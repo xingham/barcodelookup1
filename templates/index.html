@@ -45,25 +45,46 @@
             position: relative;
         }
 
+        #results-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
         .result-section {
-            margin: 8px 0;  /* increased from 4px */
+            flex: 1;
+            margin: 8px 0;
             padding: 0;
             background-color: #f3e5f5;
             border-radius: 8px;
+            min-width: 0; /* Prevents flex items from overflowing */
+        }
+
+        #google-results {
+            width: 100%;
         }
 
         .result-header {
             margin: 0;
-            padding: 4px 8px;  /* increased padding */
-            border-bottom: 1px solid #9c27b0;
-            color: #9c27b0;
+            padding: 8px 12px;
+            background-color: #9c27b0;
+            color: white;
+            border-radius: 8px 8px 0 0;
             font-size: 1.2em;
             font-weight: bold;
         }
 
         .result-content {
             margin: 0;
-            padding: 6px 8px;  /* increased padding */
+            padding: 12px;
+            min-height: 50px;
         }
 
         .product-item, .search-result {
@@ -171,13 +192,21 @@
     </div>
     <div id="product-image-container" class="product-image" style="display: none;"></div>
     <div id="result">
-        <div id="upcitemdb-results" class="result-section" style="display: none;">
-            <h2 class="result-header">UPCItemDB</h2>
-            <div class="result-content"></div>
-        </div>
-        <div id="google-results" class="result-section" style="display: none;">
-            <div class="result-header">Google Search Results</div>
-            <div class="result-content"></div>
+        <div id="results-container">
+            <div class="row">
+                <div id="upcitemdb-results" class="result-section" style="display: none;">
+                    <h2 class="result-header">UPCItemDB</h2>
+                    <div class="result-content"></div>
+                </div>
+                <div id="barcodelookup-results" class="result-section" style="display: none;">
+                    <div class="result-header">Barcode Lookup Results</div>
+                    <div class="result-content"></div>
+                </div>
+            </div>
+            <div id="google-results" class="result-section" style="display: none;">
+                <div class="result-header">Google Search Results</div>
+                <div class="result-content"></div>
+            </div>
         </div>
     </div>
 
@@ -189,6 +218,11 @@
     <script>
         // ...existing code...
         
+        function createSourceLink(url, source) {
+            const arrow = ' →'; // Add consistent arrow character
+            return `<a href="${url}" target="_blank" class="source-link">View on ${source}${arrow}</a>`;
+        }
+
         // In the Google results section
         if (data.google && data.google.length > 0) {
             const googleContent = document.querySelector('#google-results .result-content');

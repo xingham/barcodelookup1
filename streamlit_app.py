@@ -178,12 +178,61 @@ def search_google(query):
             return []
         
         service = build('customsearch', 'v1', developerKey=api_key)
-        result = service.cse().list(q=query, cx=GOOGLE_CSE_ID, num=10).execute()
+        
+        # Add excluded sites and domains
+        excluded_sites = [
+            "-site:github.com",
+            "-site:gist.github.com",
+            # Exclude international domains
+            "-site:*.ca",     # Canada
+            "-site:*.au",     # Australia
+            "-site:*.uk",     # United Kingdom
+            "-site:*.fr",     # France
+            "-site:*.de",     # Germany
+            "-site:*.jp",     # Japan
+            "-site:*.mx",     # Mexico
+            "-site:*.br",     # Brazil
+            "-site:*.es"      # Spain
+        ]
+        
+        full_query = f"{query} {' '.join(excluded_sites)}"
+        
+        # Execute search with excluded sites
+        result = service.cse().list(
+            q=full_query,
+            cx=GOOGLE_CSE_ID,
+            num=10,
+            # Focus on US retail sites
+            siteSearch="walmart.com,target.com,amazon.com,bestbuy.com",
+            siteSearchFilter="i",  # Include only these sites
+            cr="countryUS"    # Restrict to US results
+        ).execute()
         
         if DEBUG:
             st.sidebar.write(f"Google API Response: {len(result.get('items', []))} results")
         
-        return result.get('items', [])
+        # Additional filtering of results
+        filtered_results = []
+        for item in result.get('items', []):
+            link = item.get('link', '').lower()
+            # Skip if link contains excluded domains
+            if any(x in link for x in [
+                'github.com',
+                '.ca/',
+                '.au/',
+                '.uk/',
+                '.fr/',
+                '.de/',
+                '.jp/',
+                '.mx/',
+                '.br/',
+                '.es/'
+            ]):
+                continue
+            filtered_results.append(item)
+            
+        return filtered_results
+        
     except Exception as e:
         if DEBUG:
             st.sidebar.error(f"Google Search Error: {str(e)}")

@@ -1,0 +1,371 @@
+from flask import Flask, render_template, request, jsonify
+import requests
+from bs4 import BeautifulSoup
+import os
+from googleapiclient.discovery import build
+from googleapiclient import errors as googleapiclient_errors
+from concurrent.futures import ThreadPoolExecutor
+
+app = Flask(__name__)
+
+# Add multiple Google API credentials from different projects
+GOOGLE_API_KEYS = [
+    'AIzaSyDJw29dPJH7sioK4bqUo-g0VGlfVXeJHso',  # first project
+    'AIzaSyCZf5f-9rIW0hm6BoykbHMo_0XkqCEp-jY',  # second project
+    'AIzaSyBt-AH09r8dGcdWARB-u631khJXC8Cxvw4',  # third project
+    'AIzaSyBGlB4Ro1uGyfIcE7Jg8AknfdDslf9Rung',  # fourth project
+    'AIzaSyAJBtw7HcNUtmw6g3qql7g2EXkalq08hio',  # fifth project
+    'AIzaSyAeUgJyVvzJCOyBlqIZi_Au56AYq3sTF_w',  # sixth project
+    'AIzaSyBOqyxm-Uz6UxNdRf3pLAFEdo8p3a03uwc',  # seventh project
+    'AIzaSyC6YWL2Fp7aRj47A3Id3582SjfiGupQl1M',  # eighth project
+    'AIzaSyAa-17-N-baYH6c2twrasx4jRPkCOdx-Xo',  # ninth project
+    'AIzaSyA7aeu4w3thBNcNJnOoXqC4771YOyISPgw'   # tenth project
+]
+GOOGLE_CSE_ID = '310b42d4bee37464e'
+current_key_index = 0
+
+# Update get_next_api_key to match Streamlit version
+def get_next_api_key():
+    global current_key_index
+    if not GOOGLE_API_KEYS:
+        return None
+    key = GOOGLE_API_KEYS[current_key_index]
+    current_key_index = (current_key_index + 1) % len(GOOGLE_API_KEYS)
+    return key
+
+def search_google(query):
+    try:
+        api_key = get_next_api_key()
+        if not api_key:
+            print("No API key available")
+            return []
+        
+        print(f"Using API key ending in ...{api_key[-4:]}")
+        service = build('customsearch', 'v1', developerKey=api_key)
+        
+        # Define preferred retail domains including Kroger and Albertsons family stores
+        retail_domains = [
+            # Major retailers
+            "walmart.com",
+            "target.com",
+            "costco.com",
+            "samsclub.com",
+            # Dollar stores
+            "dollargeneral.com",
+            "dollartree.com",
+            "familydollar.com",
+            "fivebelow.com",
+            "99only.com",
+            # Kroger family
+            "kroger.com",
+            "ralphs.com",
+            "fredmeyer.com",
+            "smithsfoodanddrug.com",
+            "food4less.com",
+            "marianos.com",
+            "dillons.com",
+            "citymarket.com",
+            "picknsave.com",
+            # Albertsons family
+            "albertsons.com",
+            "safeway.com",
+            "vons.com",
+            "jewelosco.com",
+            "shaws.com",
+            "acmemarkets.com",
+            "pavilions.com",
+            "randalls.com",
+            "tomthumb.com",
+            # Drug stores
+            "cvs.com",
+            "walgreens.com",
+            "riteaid.com",
+            # Regional chains
+            "foodland.com",
+            "foodlandhawaii.com",
+            "foodland.org"
+        ]
+        
+        # Format query to be more inclusive
+        formatted_query = f"{query} OR {query.replace(' ', '+')}"
+        retail_sites = ' OR '.join([f'site:{domain}' for domain in retail_domains])
+        
+        # First try: retail-only search
+        retail_sites = ' OR '.join([f'site:{domain}' for domain in retail_domains])
+        retail_query = f"{query} ({retail_sites})"
+        
+        retail_results = []
+        other_results = []
+        
+        # Retail search
+        result = service.cse().list(
+            q=retail_query,
+            cx=GOOGLE_CSE_ID,
+            gl='us',
+            cr='countryUS',
+            num=10
+        ).execute()
+        
+        for item in result.get('items', []):
+            link = item.get('link', '').lower()
+            if any(domain in link for domain in retail_domains):
+                retail_results.append({
+                    'title': item.get('title', ''),
+                    'link': link,
+                    'description': item.get('snippet', ''),
+                    'source': 'Google (Retail)'
+                })
+        
+        # If we need more results, do a general search
+        if len(retail_results) < 10:
+            remaining = 10 - len(retail_results)
+            general_query = query
+            
+            result = service.cse().list(
+                q=general_query,
+                cx=GOOGLE_CSE_ID,
+                gl='us',
+                cr='countryUS',
+                num=remaining,
+                start=1,
+                excludeTerms='upcitemdb'
+            ).execute()
+            
+            for item in result.get('items', []):
+                link = item.get('link', '').lower()
+                if not any(domain in link for domain in ['.co.uk', '.ca', '.au', '.nz', '.ie', '.in', '.eu']):
+                    other_results.append({
+                        'title': item.get('title', ''),
+                        'link': link,
+                        'description': item.get('snippet', ''),
+                        'source': 'Google'
+                    })
+        
+        # Combine and return exactly 10 results
+        combined_results = retail_results + other_results
+        print(f"Total results: {len(combined_results)} ({len(retail_results)} retail + {len(other_results)} other)")
+        return combined_results[:10]
+        
+    except googleapiclient_errors.HttpError as e:
+        print(f"Google API Error: {str(e)}")
+        return []
+    except Exception as e:
+        print(f"Unexpected error in Google search: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+def search_upcitemdb(barcode):
+    try:
+        url = f'https://www.upcitemdb.com/upc/{barcode}'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        # Handle 404 more gracefully
+        if response.status_code == 404:
+            print(f"Product not found in UPCItemDB: {barcode}")
+            return []
+            
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        products = []
+        product_info = {}
+        
+        # Get all product variants from the ordered list
+        variants_list = soup.select('div.cont ol.num li')
+        if variants_list:
+            variants = [variant.text.strip() for variant in variants_list]
+            product_info['variants'] = variants
+            product_info['title'] = variants[0]  # Main title is first variant
+            product_info['description'] = variants[0]  # Main description is first variant
+            print(f"Found variants: {variants}")  # Debug log
+        
+        # Get other details from the table
+        details_table = soup.find('table', class_='detail-list')
+        if details_table:
+            rows = details_table.find_all('tr')
+            for row in rows:
+                cells = row.find_all('td')
+                if len(cells) == 2:
+                    key = cells[0].text.strip()
+                    value = cells[1].text.strip()
+                    
+                    # Map common fields to product_info
+                    if 'Brand' in key:
+                        product_info['brand'] = value
+                    elif 'Weight' in key:
+                        product_info['weight'] = value
+                    elif 'Dimension' in key:
+                        product_info['dimensions'] = value
+                    elif 'Model' in key:
+                        product_info['model'] = value
+                    elif 'UPC' in key or 'EAN' in key:
+                        if 'barcodes' not in product_info:
+                            product_info['barcodes'] = []
+                        product_info['barcodes'].append(f"{key} {value}")
+                    
+                    print(f"Found detail: {key} -> {value}")
+        
+        if product_info:
+            product_info['source'] = 'UPCItemDB'
+            products.append(product_info)
+            print(f"Final product info: {product_info}")
+            
+        return products
+        
+    except Exception as e:
+        print(f"UPCItemDB scraping error: {str(e)}")
+        return []
+
+def search_smartlabel(barcode):
+    try:
+        search_url = f'https://smartlabel.org/product-search/?product={barcode}'
+        print(f"Fetching SmartLabel search URL: {search_url}")
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+        
+        response = requests.get(search_url, headers=headers, timeout=10)
+        print(f"Search page status: {response.status_code}")
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Find all table rows
+            rows = soup.find_all('tr')
+            print(f"Found {len(rows)} table rows")
+            
+            for row in rows:
+                # Find cells in the row
+                cells = row.find_all('td')
+                if len(cells) == 2:  # Should have brand and product cells
+                    brand_cell = cells[0]
+                    product_cell = cells[1]
+                    
+                    # Get the brand text
+                    brand = brand_cell.get_text(strip=True)
+                    
+                    # Find product link
+                    product_link = product_cell.find('a')
+                    if product_link and 'coca-colaproductfacts.com' in product_link.get('href', ''):
+                        product_url = product_link['href']
+                        product_text = product_link.get_text(strip=True).replace('external', '').strip()
+                        
+                        print(f"Found product: {brand} - {product_text}")
+                        print(f"Product URL: {product_url}")
+                        
+                        # Create initial product info
+                        product_info = {
+                            'title': product_text,
+                            'link': product_url,
+                            'brand': brand,
+                            'source': 'SmartLabel'
+                        }
+                        
+                        # Try to get additional details from product page
+                        try:
+                            print(f"Fetching product details from {product_url}")
+                            product_response = requests.get(product_url, headers=headers, timeout=10)
+                            
+                            if product_response.status_code == 200:
+                                product_soup = BeautifulSoup(product_response.text, 'html.parser')
+                                product_section = product_soup.find('div', class_='product-sub-section')
+                                
+                                if product_section:
+                                    name = product_section.find('h1', id='product_name')
+                                    desc = product_section.find('h2', id='product_desc')
+                                    size = product_section.find('h3', id='product_size')
+                                    
+                                    if name: product_info['name'] = name.text.strip()
+                                    if desc: product_info['description'] = desc.text.strip()
+                                    if size: product_info['size'] = size.text.strip()
+                                    
+                                    ingredients = product_soup.find('div', class_='ingredients-list')
+                                    if ingredients:
+                                        product_info['ingredients'] = ingredients.text.strip()
+                        except Exception as e:
+                            print(f"Error fetching product details: {str(e)}")
+                        
+                        print(f"Final SmartLabel product info: {product_info}")
+                        return [product_info]
+            
+            print("No matching product found in search results")
+            return []
+            
+        print(f"Search request failed with status {response.status_code}")
+        return []
+        
+    except Exception as e:
+        print(f"SmartLabel error: {str(e)}")
+        traceback.print_exc()
+        return []
+
+@app.route('/')
+def index():
+    print("TEMPLATES DIR CONTENTS:", os.listdir("templates"))
+    return render_template('index.html')
+
+# Modify the lookup function to include SmartLabel results
+@app.route('/lookup/<barcode>', methods=['GET'])
+@app.route('/lookup', methods=['POST'])
+def lookup(barcode=None):
+    if request.method == 'POST':
+        if not request.json or 'barcode' not in request.json:
+            return jsonify({'success': False, 'error': 'No barcode provided'})
+        barcode = request.json['barcode']
+    elif not barcode:
+        return jsonify({'success': False, 'error': 'No barcode provided'})
+
+    print(f"Looking up barcode: {barcode}")
+    
+    try:
+        # Use ThreadPoolExecutor to run ALL searches in parallel
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            upcitemdb_future = executor.submit(search_upcitemdb, barcode)
+            smartlabel_future = executor.submit(search_smartlabel, barcode)
+            google_future = executor.submit(search_google, barcode)  # Always run Google search
+            
+            upcitemdb_results = upcitemdb_future.result()
+            smartlabel_results = smartlabel_future.result()
+            google_results = google_future.result()
+
+        # Add no results flag
+        no_results = not upcitemdb_results and not google_results and not smartlabel_results
+
+        return jsonify({
+            'success': True,
+            'upcitemdb': upcitemdb_results,
+            'smartlabel': smartlabel_results,
+            'google': google_results,
+            'no_results': no_results
+        })
+
+    except Exception as e:
+        print(f"Lookup error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+def test_api_keys():
+    print("Testing all API keys...")
+    for i, key in enumerate(GOOGLE_API_KEYS):
+        try:
+            service = build("customsearch", "v1", developerKey=key)
+            result = service.cse().list(q="test", cx=GOOGLE_CSE_ID, num=1).execute()
+            print(f"✓ API key {i} is working")
+        except googleapiclient_errors.HttpError as e:
+            print(f"✗ API key {i} failed: {str(e)}")
+
+# Modify the startup code
+if __name__ == '__main__':
+    import sys
+    
+    # Only test keys if --test-keys flag is provided
+    if '--test-keys' in sys.argv:
+        test_api_keys()
+    
+    print("Starting server on http://127.0.0.1:5001")
+    app.run(host='0.0.0.0', port=5001, debug=True)
