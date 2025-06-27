@@ -300,7 +300,8 @@ def search_google(query):
         if cached_results:
             if DEBUG:
                 st.sidebar.info("Using cached results")
-            return cached_results
+            return [r for r in cached_results if not any(site in r.get('link', '').lower() 
+                   for site in ['barcodespider.com', 'github.com'])]
 
         api_key = get_next_api_key()
         if not api_key:
@@ -310,19 +311,19 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Simple exact match query
-        search_query = f'"{query}"'  # Quote the UPC for exact matching
+        # Simple exact match query with exclusions
+        search_query = f'"{query}" -site:barcodespider.com -site:github.com -site:gist.github.com'
         
         if DEBUG:
             st.sidebar.write(f"Search Query: {search_query}")
         
-        # Make single API call with increased results
+        # Make single API call
         result = service.cse().list(
             q=search_query,
             cx=GOOGLE_CSE_ID,
-            num=20,  # Increased to 20 results
+            num=20,
             cr="countryUS",
-            exactTerms=query  # Keep exact UPC match
+            exactTerms=query
         ).execute()
         
         filtered_results = []
@@ -331,8 +332,8 @@ def search_google(query):
                 link = item.get('link', '').lower()
                 title = item.get('title', '')
                 
-                # Skip barcode database sites
-                if any(site in link for site in ['barcodespider.com', 'barcodelookup.com', 'upcitemdb.com']):
+                # Only exclude barcodespider and github
+                if any(site in link for site in ['barcodespider.com', 'github.com']):
                     continue
                 
                 # Clean up title
