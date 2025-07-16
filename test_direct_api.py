@@ -30,8 +30,8 @@ def test_google_api_direct():
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Simple test search - test with the specific barcode
-        query = "072940755043"  # The barcode you mentioned
+        # Single search call - test with a barcode that might have more results
+        query = "012000073052"  # Coca-Cola barcode
         search_query = query
         
         print(f"Search query: {search_query}")
@@ -39,7 +39,8 @@ def test_google_api_direct():
         result = service.cse().list(
             q=search_query,
             cx=GOOGLE_CSE_ID,
-            num=10
+            num=10,
+            start=1
         ).execute()
         
         print(f"Search successful!")

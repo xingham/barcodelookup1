@@ -310,68 +310,44 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        all_results = []
+        if DEBUG:
+            st.sidebar.write(f"Search Query: {query}")
+            st.sidebar.write(f"Using API key: {api_key[:10]}...")
         
-        # Try multiple search variations to get more results
-        search_variations = [
-            f'{query} site:walmart.com OR site:target.com OR site:amazon.com',  # Shopping sites
-            f'{query} site:barcodelookup.com OR site:upcindex.com',  # Barcode databases
-            f'barcode {query} product',  # General product search
-            f'UPC {query}',  # UPC search
-            query,  # Plain barcode
-        ]
-        
-        for search_query in search_variations:
-            try:
-                if DEBUG:
-                    st.sidebar.write(f"Trying search: {search_query}")
-                
-                # Make API call
-                result = service.cse().list(
-                    q=search_query,
-                    cx=GOOGLE_CSE_ID,
-                    num=10
-                ).execute()
-                
-                if 'items' in result:
-                    for item in result['items']:
-                        link = item.get('link', '')
-                        title = item.get('title', '')
-                        
-                        # Skip if we already have this link
-                        if any(existing['link'] == link for existing in all_results):
-                            continue
-                        
-                        # Clean up title
-                        for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
-                            title = title.replace(suffix, '')
-                        
-                        all_results.append({
-                            'title': title,
-                            'link': link,
-                            'description': item.get('snippet', ''),
-                            'source': 'Google'
-                        })
-                
-                # Stop if we have enough results
-                if len(all_results) >= 15:
-                    break
-                    
-            except Exception as search_error:
-                if DEBUG:
-                    st.sidebar.error(f"Search variation error: {str(search_error)}")
-                continue
+        # Single API call to get maximum results
+        result = service.cse().list(
+            q=query,
+            cx=GOOGLE_CSE_ID,
+            num=10,
+            start=1
+        ).execute()
         
         if DEBUG:
-            st.sidebar.write(f"Total unique results found: {len(all_results)}")
+            st.sidebar.write(f"API Response received")
+            st.sidebar.write(f"Total results: {result.get('searchInformation', {}).get('totalResults', 'Unknown')}")
+            st.sidebar.write(f"Items returned: {len(result.get('items', []))}")
         
-        filtered_results = all_results[:10]  # Return top 10 results
+        filtered_results = []
+        if 'items' in result:
+            for item in result['items']:
+                title = item.get('title', '')
+                
+                # Minimal title cleanup - remove common retailer suffixes
+                for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com', ' - Amazon.com']:
+                    title = title.replace(suffix, '')
+                
+                filtered_results.append({
+                    'title': title,
+                    'link': item.get('link', ''),
+                    'description': item.get('snippet', ''),
+                    'source': 'Google'
+                })
 
         if filtered_results:
             save_search_results(query, filtered_results)
         
         if DEBUG:
-            st.sidebar.write(f"Final filtered results: {len(filtered_results)}")
+            st.sidebar.write(f"Final results: {len(filtered_results)}")
         
         return filtered_results
 
@@ -435,7 +411,7 @@ if st.button("Search") and barcode and barcode.isdigit():
                     domain = urlparse(link).netloc.replace('www.', '')
                     domain = domain.split('.')[0].title()
                     
-                    # Display domain header and result
+                    # Display domain header and result (show all domains equally)
                     st.markdown(f"<div style='font-weight: bold; color: #4B0082; margin-bottom: 5px;'>{domain}</div>", 
                               unsafe_allow_html=True)
                     st.markdown(f"[{title}]({link})")
