@@ -16,7 +16,7 @@ def test_multiple_searches():
         api_key = GOOGLE_API_KEYS[0]
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        query = "072940755043"
+        query = "885909950805"  # iPhone barcode that should have results
         
         # Try multiple search variations with specific sites
         search_variations = [
