@@ -209,7 +209,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Debug mode - set to False to remove sidebar output
-DEBUG = False
+DEBUG = True
 
 # Load API keys from secrets with debug info
 try:
@@ -311,20 +311,25 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Simple exact match query with exclusions
-        search_query = f'"{query}" -site:barcodespider.com -site:github.com -site:gist.github.com'
+        # Simple search query with exclusions (no quotes needed with exactTerms)
+        search_query = f'{query} -site:barcodespider.com -site:github.com -site:gist.github.com'
         
         if DEBUG:
             st.sidebar.write(f"Search Query: {search_query}")
+            st.sidebar.write(f"Using API key: {api_key[:10]}...")
         
         # Make single API call
         result = service.cse().list(
             q=search_query,
             cx=GOOGLE_CSE_ID,
-            num=20,
-            cr="countryUS",
+            num=10,
             exactTerms=query
         ).execute()
+        
+        if DEBUG:
+            st.sidebar.write(f"API Response received")
+            st.sidebar.write(f"Total results: {result.get('searchInformation', {}).get('totalResults', 'Unknown')}")
+            st.sidebar.write(f"Items returned: {len(result.get('items', []))}")
         
         filtered_results = []
         if 'items' in result:
@@ -355,6 +360,10 @@ def search_google(query):
     except Exception as e:
         if DEBUG:
             st.sidebar.error(f"Search Error: {str(e)}")
+            st.sidebar.write(f"Error type: {type(e).__name__}")
+            if hasattr(e, 'resp'):
+                st.sidebar.write(f"HTTP Status: {e.resp.status}")
+                st.sidebar.write(f"Error details: {e.content}")
         return []
 
 # Main UI
