@@ -331,6 +331,11 @@ def search_google(query):
         if 'items' in result:
             for item in result['items']:
                 title = item.get('title', '')
+                link = item.get('link', '')
+                
+                # Skip PDF files
+                if link.lower().endswith('.pdf') or 'filetype:pdf' in link.lower():
+                    continue
                 
                 # Minimal title cleanup - remove common retailer suffixes
                 for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com', ' - Amazon.com']:
@@ -338,7 +343,7 @@ def search_google(query):
                 
                 filtered_results.append({
                     'title': title,
-                    'link': item.get('link', ''),
+                    'link': link,
                     'description': item.get('snippet', ''),
                     'source': 'Google'
                 })
