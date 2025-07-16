@@ -209,7 +209,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Debug mode - set to False to remove sidebar output
-DEBUG = False
+DEBUG = True
 
 # Load API keys from secrets with debug info
 try:
@@ -314,9 +314,12 @@ def search_google(query):
             st.sidebar.write(f"Search Query: {query}")
             st.sidebar.write(f"Using API key: {api_key[:10]}...")
         
-        # Single API call to get maximum results
+        # Single API call with optimized query to find more results including Amazon
+        # Use a broader query that includes multiple search terms
+        optimized_query = f"{query} OR UPC {query} OR {query} amazon"
+        
         result = service.cse().list(
-            q=query,
+            q=optimized_query,
             cx=GOOGLE_CSE_ID,
             num=10,
             start=1
@@ -324,6 +327,7 @@ def search_google(query):
         
         if DEBUG:
             st.sidebar.write(f"API Response received")
+            st.sidebar.write(f"Optimized query used: {optimized_query}")
             st.sidebar.write(f"Total results: {result.get('searchInformation', {}).get('totalResults', 'Unknown')}")
             st.sidebar.write(f"Items returned: {len(result.get('items', []))}")
         
@@ -333,24 +337,38 @@ def search_google(query):
                 title = item.get('title', '')
                 link = item.get('link', '')
                 
+                # Debug: Show all domains being returned
+                if DEBUG:
+                    from urllib.parse import urlparse
+                    domain = urlparse(link).netloc
+                    st.sidebar.write(f"Found domain: {domain}")
+                    if 'amazon' in domain.lower():
+                        st.sidebar.write(f"🟢 Amazon result found: {title[:50]}...")
+                
                 # Enhanced PDF filtering - check multiple indicators
                 link_lower = link.lower()
                 snippet_lower = item.get('snippet', '').lower()
                 title_upper = title.upper()
                 
-                # Check for PDF indicators
+                # Check for PDF indicators - more comprehensive check
                 is_pdf = (
                     link_lower.endswith('.pdf') or
                     'filetype:pdf' in link_lower or
-                    '.pdf' in link_lower or
-                    '/uploads/' in link_lower and '.pdf' in link_lower or
-                    'wp-content' in link_lower and '.pdf' in link_lower or
+                    '.pdf' in link_lower or  # This should catch the nyswicvendors example
+                    '/uploads/' in link_lower and ('pdf' in link_lower or link_lower.endswith('.pdf')) or
+                    'wp-content' in link_lower and ('pdf' in link_lower or link_lower.endswith('.pdf')) or
+                    '/wp-content/uploads/' in link_lower or  # Common WordPress PDF path
                     'pdf' in snippet_lower or
                     '[PDF]' in title or
-                    'PDF' in title_upper
+                    'PDF' in title_upper or
+                    title_upper.endswith('.PDF') or
+                    '.pdf?' in link_lower or  # PDFs with query parameters
+                    '.pdf#' in link_lower    # PDFs with anchors
                 )
                 
                 if is_pdf:
+                    if DEBUG and 'amazon' in link_lower:
+                        st.sidebar.write(f"🔴 Amazon PDF filtered out: {title[:50]}...")
                     continue
                 
                 # Minimal title cleanup - remove common retailer suffixes
