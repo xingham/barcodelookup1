@@ -367,8 +367,21 @@ def search_google(query):
                 )
                 
                 if is_pdf:
-                    if DEBUG and 'amazon' in link_lower:
-                        st.sidebar.write(f"🔴 Amazon PDF filtered out: {title[:50]}...")
+                    if DEBUG:
+                        reasons = []
+                        if link_lower.endswith('.pdf'):
+                            reasons.append("ends with .pdf")
+                        if '.pdf' in link_lower:
+                            reasons.append("contains .pdf")
+                        if '/wp-content/uploads/' in link_lower:
+                            reasons.append("wp-content/uploads path")
+                        if 'pdf' in snippet_lower:
+                            reasons.append("pdf in snippet")
+                        if '[PDF]' in title or 'PDF' in title_upper:
+                            reasons.append("PDF in title")
+                        st.sidebar.write(f"🔴 PDF filtered: {title[:30]}...")
+                        st.sidebar.write(f"   Reason: {', '.join(reasons)}")
+                        st.sidebar.write(f"   URL: {link[:50]}...")
                     continue
                 
                 # Minimal title cleanup - remove common retailer suffixes
