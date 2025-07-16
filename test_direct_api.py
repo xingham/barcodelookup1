@@ -30,8 +30,8 @@ def test_google_api_direct():
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Simple test search - test with general term
-        query = "coca cola"  # General search term
+        # Simple test search - test with the specific barcode
+        query = "072940755043"  # The barcode you mentioned
         search_query = query
         
         print(f"Search query: {search_query}")

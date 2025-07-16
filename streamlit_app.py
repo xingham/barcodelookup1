@@ -209,7 +209,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Debug mode - set to False to remove sidebar output
-DEBUG = False
+DEBUG = True
 
 # Load API keys from secrets with debug info
 try:
@@ -310,40 +310,62 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Simple search query - no restrictions, no exclusions
-        search_query = query
+        all_results = []
+        
+        # Try multiple search variations to get more results
+        search_variations = [
+            f'{query} site:walmart.com OR site:target.com OR site:amazon.com',  # Shopping sites
+            f'{query} site:barcodelookup.com OR site:upcindex.com',  # Barcode databases
+            f'barcode {query} product',  # General product search
+            f'UPC {query}',  # UPC search
+            query,  # Plain barcode
+        ]
+        
+        for search_query in search_variations:
+            try:
+                if DEBUG:
+                    st.sidebar.write(f"Trying search: {search_query}")
+                
+                # Make API call
+                result = service.cse().list(
+                    q=search_query,
+                    cx=GOOGLE_CSE_ID,
+                    num=10
+                ).execute()
+                
+                if 'items' in result:
+                    for item in result['items']:
+                        link = item.get('link', '')
+                        title = item.get('title', '')
+                        
+                        # Skip if we already have this link
+                        if any(existing['link'] == link for existing in all_results):
+                            continue
+                        
+                        # Clean up title
+                        for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
+                            title = title.replace(suffix, '')
+                        
+                        all_results.append({
+                            'title': title,
+                            'link': link,
+                            'description': item.get('snippet', ''),
+                            'source': 'Google'
+                        })
+                
+                # Stop if we have enough results
+                if len(all_results) >= 15:
+                    break
+                    
+            except Exception as search_error:
+                if DEBUG:
+                    st.sidebar.error(f"Search variation error: {str(search_error)}")
+                continue
         
         if DEBUG:
-            st.sidebar.write(f"Search Query: {search_query}")
-            st.sidebar.write(f"Using API key: {api_key[:10]}...")
+            st.sidebar.write(f"Total unique results found: {len(all_results)}")
         
-        # Make single API call with minimal parameters
-        result = service.cse().list(
-            q=search_query,
-            cx=GOOGLE_CSE_ID,
-            num=10
-        ).execute()
-        
-        if DEBUG:
-            st.sidebar.write(f"API Response received")
-            st.sidebar.write(f"Total results: {result.get('searchInformation', {}).get('totalResults', 'Unknown')}")
-            st.sidebar.write(f"Items returned: {len(result.get('items', []))}")
-        
-        filtered_results = []
-        if 'items' in result:
-            for item in result['items']:
-                title = item.get('title', '')
-                
-                # Clean up title (keep this minimal cleanup)
-                for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
-                    title = title.replace(suffix, '')
-                
-                filtered_results.append({
-                    'title': title,
-                    'link': item.get('link', ''),
-                    'description': item.get('snippet', ''),
-                    'source': 'Google'
-                })
+        filtered_results = all_results[:10]  # Return top 10 results
 
         if filtered_results:
             save_search_results(query, filtered_results)
