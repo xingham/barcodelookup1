@@ -209,7 +209,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Debug mode - set to False to remove sidebar output
-DEBUG = True
+DEBUG = False
 
 # Load API keys from secrets with debug info
 try:
