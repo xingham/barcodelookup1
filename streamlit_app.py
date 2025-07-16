@@ -123,9 +123,9 @@ st.markdown("""
             outline: none !important;
         }
         
-        /* Modern button styling with contrasting colors */
+        /* Modern button styling with softer contrasting colors */
         .stButton > button {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%) !important;
+            background: linear-gradient(135deg, #20bf6b 0%, #01a3a4 100%) !important;
             color: white !important;
             border: none !important;
             border-radius: 12px !important;
@@ -134,13 +134,13 @@ st.markdown("""
             font-weight: 600 !important;
             letter-spacing: 0.5px !important;
             transition: all 0.3s ease !important;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4) !important;
+            box-shadow: 0 4px 15px rgba(32, 191, 107, 0.3) !important;
         }
         
         .stButton > button:hover {
             transform: translateY(-2px) !important;
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6) !important;
-            background: linear-gradient(135deg, #ff5252 0%, #d84315 100%) !important;
+            box-shadow: 0 8px 25px rgba(32, 191, 107, 0.4) !important;
+            background: linear-gradient(135deg, #0fb9b1 0%, #006ba6 100%) !important;
         }
         
         .stButton > button:active {
