@@ -295,12 +295,12 @@ def get_cached_results(barcode):
 
 def search_google(query):
     try:
-        # Check cache first
-        cached_results = get_cached_results(query)
-        if cached_results:
-            if DEBUG:
-                st.sidebar.info("Using cached results")
-            return cached_results
+        # Temporarily disable cache to test new PDF filtering
+        # cached_results = get_cached_results(query)
+        # if cached_results:
+        #     if DEBUG:
+        #         st.sidebar.info("Using cached results")
+        #     return cached_results
 
         api_key = get_next_api_key()
         if not api_key:
