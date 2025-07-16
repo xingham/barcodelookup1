@@ -178,6 +178,32 @@ st.markdown("""
             margin: 0 !important;
         }
         
+        /* Make sidebar text white */
+        .stSidebar, 
+        .stSidebar .stMarkdown,
+        .stSidebar .stMarkdown p,
+        .stSidebar .stMarkdown div,
+        .stSidebar .stMarkdown span,
+        .stSidebar .stWrite,
+        .stSidebar .stInfo,
+        .stSidebar .stSuccess,
+        .stSidebar .stWarning,
+        .stSidebar .stError,
+        .stSidebar [data-testid="stMarkdownContainer"],
+        .stSidebar [data-testid="stText"] {
+            color: white !important;
+        }
+        
+        /* Also target sidebar elements by CSS selectors */
+        [data-testid="stSidebar"] *,
+        [data-testid="stSidebar"] .stMarkdown,
+        [data-testid="stSidebar"] .stMarkdown *,
+        section[data-testid="stSidebar"] *,
+        .css-1d391kg *,
+        .css-1lcbmhc * {
+            color: white !important;
+        }
+        
         /* Adjust subheader spacing */
         .stSubheader {
             margin-bottom: 0.5rem !important;
