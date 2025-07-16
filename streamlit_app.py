@@ -141,11 +141,7 @@ def get_theme_css(dark_mode=True):
             color: {title_color} !important;
             text-align: center;
             margin-bottom: 3rem !important;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(135deg, {title_color}, rgba(255, 255, 255, 0.8));
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             letter-spacing: -0.02em;
         }}
         
@@ -782,8 +778,7 @@ st.markdown("---")
 footer_color = "rgba(255, 255, 255, 0.9)" if st.session_state.dark_mode else "#6c757d"
 st.markdown(
     f"<div style='text-align: center; color: {footer_color}; padding: 40px; font-size: 1.2rem; font-weight: 400; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); border-radius: 20px; margin: 20px 0; background: rgba(255, 255, 255, 0.05);'>"
-    "✨ Brought to you by UPC Me Rollin' ✨<br/>"
-    "<span style='font-size: 0.9rem; opacity: 0.8; font-weight: 300;'>Modern barcode lookup with style</span>"
+    "✨ Brought to you by UPC Me Rollin' ✨"
     "</div>", 
     unsafe_allow_html=True
 )
