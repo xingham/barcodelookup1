@@ -22,24 +22,28 @@ def get_theme_css(dark_mode=True):
         # Dark mode colors - sleek modern gradient
         bg_gradient = "linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)"
         card_bg = "rgba(255, 255, 255, 0.95)"
-        text_color = "#2c3e50"
-        title_color = "white"
+        text_color = "#2c3e50"  # Dark text for light cards
+        title_color = "white"   # White title on dark background
         sidebar_bg = "rgba(255, 255, 255, 0.08)"
-        sidebar_text = "white"
-        footer_color = "rgba(255, 255, 255, 0.8)"
+        sidebar_text = "white"  # White text on dark sidebar
+        footer_color = "rgba(255, 255, 255, 0.9)"
         input_bg = "rgba(255, 255, 255, 0.1)"
         input_border = "rgba(255, 255, 255, 0.2)"
+        input_text_color = "white"  # White text in transparent input
+        content_text_color = "white"  # White text on dark background
     else:
         # Light mode colors - clean modern gradient
         bg_gradient = "linear-gradient(135deg, #ffecd2 0%, #fcb69f 25%, #a8edea 50%, #fed6e3 75%, #d299c2 100%)"
         card_bg = "rgba(255, 255, 255, 0.98)"
-        text_color = "#2c3e50"
-        title_color = "#2c3e50"
+        text_color = "#2c3e50"  # Dark text for light cards
+        title_color = "#2c3e50"  # Dark title on light background
         sidebar_bg = "rgba(255, 255, 255, 0.7)"
-        sidebar_text = "#2c3e50"
-        footer_color = "#6c757d"
-        input_bg = "rgba(255, 255, 255, 0.3)"
-        input_border = "rgba(255, 255, 255, 0.5)"
+        sidebar_text = "#2c3e50"  # Dark text on light sidebar
+        footer_color = "#2c3e50"
+        input_bg = "rgba(255, 255, 255, 0.6)"
+        input_border = "rgba(0, 0, 0, 0.2)"
+        input_text_color = "#2c3e50"  # Dark text in light input
+        content_text_color = "#2c3e50"  # Dark text on light background
     
     return f"""
     <style>
@@ -96,16 +100,38 @@ def get_theme_css(dark_mode=True):
             margin: 0;
         }}
         
-        /* Modern text styling with better readability */
+        /* Modern text styling with proper contrast */
         .stMarkdown, .stSubheader, .stTitle, h1, h2, h3, p, span, div {{
-            color: {text_color} !important;
+            color: {content_text_color} !important;
             font-weight: 400;
             line-height: 1.6;
         }}
         
+        /* Override for content outside cards to be visible on background */
+        .stApp > div > div > div > div > div {{
+            color: {content_text_color} !important;
+        }}
+        
+        /* Ensure warning/success/info text is readable */
+        .stWarning p, .stInfo p, .stSuccess p, .stError p {{
+            color: white !important;
+        }}
+        
+        /* Card content has proper contrast */
+        .results-columns .stMarkdown, 
+        .results-columns .stSubheader, 
+        .results-columns h1, 
+        .results-columns h2, 
+        .results-columns h3, 
+        .results-columns p, 
+        .results-columns span, 
+        .results-columns div {{
+            color: {text_color} !important;
+        }}
+        
         /* Style headers specifically with modern typography */
         .stHeadingContainer {{
-            color: {text_color} !important;
+            color: {content_text_color} !important;
         }}
         
         /* Modern title styling with enhanced effects */
@@ -138,7 +164,7 @@ def get_theme_css(dark_mode=True):
             border-radius: 12px !important;
             border: none !important;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-            color: {text_color} !important;
+            color: white !important;
             font-weight: 500 !important;
         }}
         
@@ -165,7 +191,7 @@ def get_theme_css(dark_mode=True):
         
         /* Modern transparent input styling with glassmorphism */
         .stTextInput input {{
-            color: {text_color} !important;
+            color: {input_text_color} !important;
             background: {input_bg} !important;
             backdrop-filter: blur(20px) !important;
             border: 2px solid {input_border} !important;
@@ -186,6 +212,13 @@ def get_theme_css(dark_mode=True):
         
         .stTextInput input::placeholder {{
             color: rgba(255, 255, 255, 0.6) !important;
+            font-weight: 400 !important;
+        }}
+        
+        /* Light mode input placeholder */
+        .stTextInput input::placeholder {{
+            color: {input_text_color} !important;
+            opacity: 0.6 !important;
             font-weight: 400 !important;
         }}
         
