@@ -17,47 +17,139 @@ st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
 # Add custom CSS
 st.markdown("""
     <style>
-        /* Main page background */
+        /* Import modern font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        /* Main page background with gradient */
         .stApp {
-            background-color: #ffffcc;  /* pastel yellow */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
         }
         
-        /* Purple background for results columns */
+        /* Modern card-style columns with glassmorphism effect */
         [data-testid="column"] {
-            background-color: #e6e6fa;  /* light purple */
-            padding: 20px;
-            border-radius: 10px;
-            margin: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 15px 5px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         
-        /* Make all text elements dark purple */
+        [data-testid="column"]:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Modern text styling with better readability */
         .stMarkdown, .stSubheader, .stTitle, h1, h2, h3, p, span, div {
-            color: #4B0082 !important;  /* indigo/dark purple */
+            color: #2c3e50 !important;
+            font-weight: 400;
+            line-height: 1.6;
         }
         
-        /* Style headers specifically */
+        /* Style headers specifically with modern typography */
         .stHeadingContainer {
-            color: #4B0082 !important;
+            color: #2c3e50 !important;
         }
         
-        /* Make warning and info messages dark purple */
+        /* Modern title styling */
+        h1 {
+            font-size: 2.5rem !important;
+            font-weight: 700 !important;
+            color: white !important;
+            text-align: center;
+            margin-bottom: 2rem !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Subheader styling */
+        h2, .stSubheader {
+            font-size: 1.5rem !important;
+            font-weight: 600 !important;
+            color: #34495e !important;
+            margin-bottom: 1rem !important;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 0.5rem;
+        }
+        
+        /* Modern alert styling */
         .stWarning, .stInfo, .stSuccess {
-            color: #4B0082 !important;
+            border-radius: 12px !important;
+            border: none !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+            color: #2c3e50 !important;
+            font-weight: 500 !important;
+        }
+        
+        .stSuccess {
+            background: linear-gradient(135deg, #00b09b, #96c93d) !important;
+            color: white !important;
+        }
+        
+        .stWarning {
+            background: linear-gradient(135deg, #f093fb, #f5576c) !important;
+            color: white !important;
+        }
+        
+        .stInfo {
+            background: linear-gradient(135deg, #4facfe, #00f2fe) !important;
+            color: white !important;
         }
         
         /* Style footer text */
         .footer {
-            color: #4B0082 !important;
+            color: white !important;
         }
         
-        /* Style input text to be white */
+        /* Modern input styling */
         .stTextInput input {
-            color: white !important;
+            color: #2c3e50 !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 2px solid rgba(116, 75, 162, 0.3) !important;
+            border-radius: 12px !important;
+            padding: 12px 16px !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
         }
         
-        /* Make all button text white */
-        button, .stButton > button, [data-testid="baseButton-secondary"] {
+        .stTextInput input:focus {
+            border-color: #764ba2 !important;
+            box-shadow: 0 0 0 3px rgba(116, 75, 162, 0.1) !important;
+            outline: none !important;
+        }
+        
+        /* Modern button styling */
+        .stButton > button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 12px 32px !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 15px rgba(116, 75, 162, 0.3) !important;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(116, 75, 162, 0.4) !important;
+        }
+        
+        .stButton > button:active {
+            transform: translateY(0) !important;
+        }
+        
+        /* Modern menu button styling */
+        button, [data-testid="baseButton-secondary"] {
+            color: white !important;
+            border-radius: 8px !important;
         }
         
         /* Style all button text elements to be white */
@@ -108,53 +200,64 @@ st.markdown("""
             color: white !important;
         }
         
-        /* Reduce spacing between headers and content */
+        /* Modern spacing and typography */
         .stMarkdown h1 {
-            margin-bottom: 0.5rem !important;
+            margin-bottom: 1rem !important;
+            font-weight: 700 !important;
         }
         .stMarkdown h2 {
-            margin-bottom: 0.3rem !important;
+            margin-bottom: 0.8rem !important;
+            font-weight: 600 !important;
         }
         .stMarkdown h3 {
-            margin-bottom: 0.2rem !important;
-            margin-top: 0.5rem !important;
+            margin-bottom: 0.6rem !important;
+            margin-top: 1rem !important;
+            font-weight: 500 !important;
         }
         
-        /* Reduce spacing between dividers */
+        /* Modern dividers */
         hr {
-            margin: 0.5rem 0 !important;
+            margin: 1.5rem 0 !important;
+            border: none !important;
+            height: 1px !important;
+            background: linear-gradient(90deg, transparent, rgba(52, 73, 94, 0.3), transparent) !important;
         }
         
-        /* Adjust column padding */
+        /* Enhanced column layout */
         [data-testid="column"] {
-            padding: 10px !important;
+            padding: 30px !important;
+            min-height: 400px !important;
         }
         
-        /* Make columns equal width and height */
+        /* Modern columns styling */
         .stColumns [data-testid="column"] {
             width: 50% !important;
             flex: 1 1 50% !important;
         }
         
-        /* Reduce spacing between items */
+        /* Better spacing for content */
         .stMarkdown p {
-            margin-bottom: 0.2rem !important;
+            margin-bottom: 0.8rem !important;
+            font-weight: 400 !important;
         }
 
-        /* Column styling */
+        /* Modern column container */
         .stColumns {
-            gap: 1rem !important;
+            gap: 2rem !important;
         }
         
         [data-testid="column"] {
-            background-color: #e6e6fa;
-            border-radius: 10px;
-            padding: 1rem !important;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px !important;
             min-width: 45% !important;
             margin: 0 !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
-        /* Force equal width columns */
+        /* Responsive layout */
         .row-widget.stColumns {
             display: flex !important;
             flex-direction: row !important;
@@ -162,23 +265,24 @@ st.markdown("""
             align-items: stretch !important;
         }
         
-        /* Remove any default margins that might cause spacing */
+        /* Container improvements */
         .block-container {
-            padding: 2rem 1rem !important;
-            max-width: 100% !important;
+            padding: 3rem 2rem !important;
+            max-width: 1200px !important;
+            margin: 0 auto !important;
         }
         
-        /* Ensure content fills column width */
+        /* Content width */
         [data-testid="column"] > div {
             width: 100% !important;
         }
 
-        /* Remove extra spacing from markdown elements */
+        /* Clean markdown spacing */
         .stMarkdown {
             margin: 0 !important;
         }
         
-        /* Make sidebar text white */
+        /* Modern sidebar styling with glassmorphism */
         .stSidebar, 
         .stSidebar .stMarkdown,
         .stSidebar .stMarkdown p,
@@ -192,9 +296,17 @@ st.markdown("""
         .stSidebar [data-testid="stMarkdownContainer"],
         .stSidebar [data-testid="stText"] {
             color: white !important;
+            font-weight: 400 !important;
         }
         
-        /* Also target sidebar elements by CSS selectors */
+        /* Enhanced sidebar styling */
+        [data-testid="stSidebar"] {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(15px) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        /* Sidebar content styling */
         [data-testid="stSidebar"] *,
         [data-testid="stSidebar"] .stMarkdown,
         [data-testid="stSidebar"] .stMarkdown *,
@@ -202,34 +314,68 @@ st.markdown("""
         .css-1d391kg *,
         .css-1lcbmhc * {
             color: white !important;
+            font-weight: 300 !important;
         }
         
-        /* Adjust subheader spacing */
+        /* Modern spacing control */
         .stSubheader {
-            margin-bottom: 0.5rem !important;
+            margin-bottom: 1rem !important;
         }
         
-        /* Category header styles */
+        /* Modern category headers with gradients */
         .category-header-main {
-            font-size: 1.2em !important;
-            font-weight: bold !important;
-            margin-bottom: 0.3rem !important;
-            color: #4B0082 !important;
+            font-size: 1.4rem !important;
+            font-weight: 600 !important;
+            margin-bottom: 1rem !important;
+            color: #2c3e50 !important;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .category-header-secondary {
-            font-size: 1.2em !important;  /* Changed from 0.9em to match main */
-            font-weight: bold !important;
-            margin-bottom: 0.3rem !important;  /* Changed to match main */
-            color: #4B0082 !important;
+            font-size: 1.4rem !important;
+            font-weight: 600 !important;
+            margin-bottom: 1rem !important;
+            color: #2c3e50 !important;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
-        /* Add style for variants header */
+        /* Modern variants header */
         .variants-header {
-            font-size: 1.2em !important;
-            font-weight: bold !important;
-            margin-bottom: 0.3rem !important;
-            color: #4B0082 !important;
+            font-size: 1.2rem !important;
+            font-weight: 500 !important;
+            margin-bottom: 0.8rem !important;
+            color: #34495e !important;
+            border-left: 4px solid #3498db;
+            padding-left: 1rem;
+        }
+        
+        /* Modern links styling */
+        a {
+            color: #3498db !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+            transition: color 0.3s ease !important;
+        }
+        
+        a:hover {
+            color: #2980b9 !important;
+        }
+        
+        /* Modern loading spinner */
+        .stSpinner {
+            color: white !important;
+        }
+        
+        /* Better result item styling */
+        .stMarkdown p strong {
+            color: #2c3e50 !important;
+            font-weight: 600 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -528,8 +674,8 @@ if st.button("Search") and barcode and barcode.isdigit():
 # Add footer with custom styling
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: gray; padding: 20px;'>"
-    "Brought to you by UPC Me Rollin'"
+    "<div style='text-align: center; color: white; padding: 30px; font-size: 1.1rem; font-weight: 300; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);'>"
+    "✨ Brought to you by UPC Me Rollin' ✨"
     "</div>", 
     unsafe_allow_html=True
 )
