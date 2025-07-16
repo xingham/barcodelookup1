@@ -49,8 +49,8 @@ def get_theme_css(dark_mode=True):
             min-height: 100vh;
         }}
         
-        /* Modern card-style columns with glassmorphism effect */
-        [data-testid="column"] {{
+        /* Only apply card styling to results columns, not header columns */
+        .results-columns [data-testid="column"] {{
             background: {card_bg};
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -61,9 +61,18 @@ def get_theme_css(dark_mode=True):
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }}
         
-        [data-testid="column"]:hover {{
+        .results-columns [data-testid="column"]:hover {{
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }}
+        
+        /* Keep header area clean without card styling */
+        .header-columns [data-testid="column"] {{
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 10px;
+            margin: 0;
         }}
         
         /* Modern text styling with better readability */
@@ -227,14 +236,14 @@ def get_theme_css(dark_mode=True):
             background: linear-gradient(90deg, transparent, rgba(52, 73, 94, 0.3), transparent) !important;
         }}
         
-        /* Enhanced column layout */
-        [data-testid="column"] {{
+        /* Enhanced results column layout */
+        .results-columns [data-testid="column"] {{
             padding: 30px !important;
             min-height: 400px !important;
         }}
         
-        /* Modern columns styling */
-        .stColumns [data-testid="column"] {{
+        /* Modern results columns styling */
+        .results-columns .stColumns [data-testid="column"] {{
             width: 50% !important;
             flex: 1 1 50% !important;
         }}
@@ -626,10 +635,16 @@ st.title("Barcode Product Lookup")
 
 # Theme toggle button
 col1, col2 = st.columns([4, 1])
+with col1:
+    pass  # Empty column for spacing
 with col2:
     if st.button("🌓 Toggle Theme"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
+
+# Wrap the theme toggle in a custom class
+st.markdown('<div class="header-columns">', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Input with immediate validation
 barcode = st.text_input("Enter barcode number")
@@ -644,6 +659,9 @@ if barcode:
 # Search button with progress indicators
 if st.button("Search") and barcode and barcode.isdigit():
     with st.spinner("Searching databases..."):
+        # Wrap results columns in custom class for styling
+        st.markdown('<div class="results-columns">', unsafe_allow_html=True)
+        
         # Create two equal columns
         col1, col2 = st.columns([1, 1])  # Equal width columns
         
@@ -685,6 +703,9 @@ if st.button("Search") and barcode and barcode.isdigit():
                     st.markdown(f"[{title}]({link})")
             else:
                 st.info("No Google results found")
+                
+        # Close the results columns div
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Add footer with custom styling
 st.markdown("---")
