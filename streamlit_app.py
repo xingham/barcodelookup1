@@ -336,13 +336,21 @@ def search_google(query):
                 # Enhanced PDF filtering - check multiple indicators
                 link_lower = link.lower()
                 snippet_lower = item.get('snippet', '').lower()
+                title_upper = title.upper()
                 
-                if (link_lower.endswith('.pdf') or 
+                # Check for PDF indicators
+                is_pdf = (
+                    link_lower.endswith('.pdf') or
                     'filetype:pdf' in link_lower or
                     '.pdf' in link_lower or
+                    '/uploads/' in link_lower and '.pdf' in link_lower or
+                    'wp-content' in link_lower and '.pdf' in link_lower or
                     'pdf' in snippet_lower or
                     '[PDF]' in title or
-                    'PDF' in title):
+                    'PDF' in title_upper
+                )
+                
+                if is_pdf:
                     continue
                 
                 # Minimal title cleanup - remove common retailer suffixes
