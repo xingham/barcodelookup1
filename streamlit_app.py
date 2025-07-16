@@ -19,34 +19,55 @@ st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
 # Add custom CSS
 def get_theme_css(dark_mode=True):
     if dark_mode:
-        # Dark mode colors
-        bg_gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        # Dark mode colors - sleek modern gradient
+        bg_gradient = "linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)"
         card_bg = "rgba(255, 255, 255, 0.95)"
         text_color = "#2c3e50"
         title_color = "white"
-        sidebar_bg = "rgba(255, 255, 255, 0.1)"
+        sidebar_bg = "rgba(255, 255, 255, 0.08)"
         sidebar_text = "white"
-        footer_color = "white"
+        footer_color = "rgba(255, 255, 255, 0.8)"
+        input_bg = "rgba(255, 255, 255, 0.1)"
+        input_border = "rgba(255, 255, 255, 0.2)"
     else:
-        # Light mode colors
-        bg_gradient = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
+        # Light mode colors - clean modern gradient
+        bg_gradient = "linear-gradient(135deg, #ffecd2 0%, #fcb69f 25%, #a8edea 50%, #fed6e3 75%, #d299c2 100%)"
         card_bg = "rgba(255, 255, 255, 0.98)"
         text_color = "#2c3e50"
         title_color = "#2c3e50"
-        sidebar_bg = "rgba(248, 249, 250, 0.95)"
+        sidebar_bg = "rgba(255, 255, 255, 0.7)"
         sidebar_text = "#2c3e50"
         footer_color = "#6c757d"
+        input_bg = "rgba(255, 255, 255, 0.3)"
+        input_border = "rgba(255, 255, 255, 0.5)"
     
     return f"""
     <style>
         /* Import modern font */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
-        /* Main page background with gradient */
+        /* Main page background with sleek modern gradient */
         .stApp {{
             background: {bg_gradient};
+            background-attachment: fixed;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
+        }}
+        
+        /* Add subtle animated background pattern */
+        .stApp::before {{
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
         }}
         
         /* Only apply card styling to results columns, not header columns */
@@ -87,14 +108,19 @@ def get_theme_css(dark_mode=True):
             color: {text_color} !important;
         }}
         
-        /* Modern title styling */
+        /* Modern title styling with enhanced effects */
         h1 {{
-            font-size: 2.5rem !important;
-            font-weight: 700 !important;
+            font-size: 3rem !important;
+            font-weight: 800 !important;
             color: {title_color} !important;
             text-align: center;
-            margin-bottom: 2rem !important;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 3rem !important;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, {title_color}, rgba(255, 255, 255, 0.8));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
         }}
         
         /* Subheader styling */
@@ -131,51 +157,61 @@ def get_theme_css(dark_mode=True):
             color: white !important;
         }}
         
-        /* Style footer text */
+        /* Enhanced footer styling */
         .footer {{
             color: {footer_color} !important;
+            backdrop-filter: blur(10px) !important;
         }}
         
-        /* Modern input styling */
+        /* Modern transparent input styling with glassmorphism */
         .stTextInput input {{
             color: {text_color} !important;
-            background: rgba(255, 255, 255, 0.9) !important;
-            border: 2px solid rgba(116, 75, 162, 0.3) !important;
-            border-radius: 12px !important;
-            padding: 12px 16px !important;
-            font-size: 16px !important;
+            background: {input_bg} !important;
+            backdrop-filter: blur(20px) !important;
+            border: 2px solid {input_border} !important;
+            border-radius: 16px !important;
+            padding: 16px 20px !important;
+            font-size: 18px !important;
             font-weight: 500 !important;
-            transition: all 0.3s ease !important;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
         }}
         
         .stTextInput input:focus {{
-            border-color: #764ba2 !important;
-            box-shadow: 0 0 0 3px rgba(116, 75, 162, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.6) !important;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1), 0 12px 40px rgba(0, 0, 0, 0.15) !important;
             outline: none !important;
+            transform: translateY(-2px) !important;
         }}
         
-        /* Modern button styling with softer contrasting colors */
+        .stTextInput input::placeholder {{
+            color: rgba(255, 255, 255, 0.6) !important;
+            font-weight: 400 !important;
+        }}
+        
+        /* Modern enhanced button styling */
         .stButton > button {{
-            background: linear-gradient(135deg, #20bf6b 0%, #01a3a4 100%) !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #8B5CF6 100%) !important;
             color: white !important;
             border: none !important;
-            border-radius: 12px !important;
-            padding: 12px 32px !important;
-            font-size: 16px !important;
+            border-radius: 16px !important;
+            padding: 16px 40px !important;
+            font-size: 18px !important;
             font-weight: 600 !important;
             letter-spacing: 0.5px !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 4px 15px rgba(32, 191, 107, 0.3) !important;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3) !important;
+            backdrop-filter: blur(10px) !important;
         }}
         
         .stButton > button:hover {{
-            transform: translateY(-2px) !important;
-            box-shadow: 0 8px 25px rgba(32, 191, 107, 0.4) !important;
-            background: linear-gradient(135deg, #0fb9b1 0%, #006ba6 100%) !important;
+            transform: translateY(-3px) scale(1.02) !important;
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.4) !important;
+            background: linear-gradient(135deg, #764ba2 0%, #8B5CF6 50%, #667eea 100%) !important;
         }}
         
         .stButton > button:active {{
-            transform: translateY(0) !important;
+            transform: translateY(-1px) scale(1.01) !important;
         }}
         
         /* Modern sidebar styling with glassmorphism */
@@ -195,11 +231,12 @@ def get_theme_css(dark_mode=True):
             font-weight: 400 !important;
         }}
         
-        /* Enhanced sidebar styling */
+        /* Enhanced sidebar styling with better glassmorphism */
         [data-testid="stSidebar"] {{
             background: {sidebar_bg} !important;
-            backdrop-filter: blur(15px) !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(25px) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1) !important;
         }}
         
         /* Sidebar content styling */
@@ -640,7 +677,7 @@ with col1:
 with col2:
     if st.button("🌓 Toggle Theme"):
         st.session_state.dark_mode = not st.session_state.dark_mode
-        st.rerun()
+        st.experimental_rerun()
 
 # Wrap the theme toggle in a custom class
 st.markdown('<div class="header-columns">', unsafe_allow_html=True)
@@ -707,11 +744,13 @@ if st.button("Search") and barcode and barcode.isdigit():
         # Close the results columns div
         st.markdown('</div>', unsafe_allow_html=True)
 
-# Add footer with custom styling
+# Add footer with enhanced styling
 st.markdown("---")
+footer_color = "rgba(255, 255, 255, 0.9)" if st.session_state.dark_mode else "#6c757d"
 st.markdown(
-    "<div style='text-align: center; color: white; padding: 30px; font-size: 1.1rem; font-weight: 300; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);'>"
-    "✨ Brought to you by UPC Me Rollin' ✨"
+    f"<div style='text-align: center; color: {footer_color}; padding: 40px; font-size: 1.2rem; font-weight: 400; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); border-radius: 20px; margin: 20px 0; background: rgba(255, 255, 255, 0.05);'>"
+    "✨ Brought to you by UPC Me Rollin' ✨<br/>"
+    "<span style='font-size: 0.9rem; opacity: 0.8; font-weight: 300;'>Modern barcode lookup with style</span>"
     "</div>", 
     unsafe_allow_html=True
 )
