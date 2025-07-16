@@ -7,29 +7,51 @@ from datetime import datetime
 import json
 import os
 
-# Initialize session state for API key rotation
+# Initialize session state for API key rotation and theme
 if 'current_key_index' not in st.session_state:
     st.session_state.current_key_index = 0
+if 'dark_mode' not in st.session_state:
+    st.session_state.dark_mode = True
 
 # Configure page with custom styling
 st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
 
 # Add custom CSS
-st.markdown("""
+def get_theme_css(dark_mode=True):
+    if dark_mode:
+        # Dark mode colors
+        bg_gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        card_bg = "rgba(255, 255, 255, 0.95)"
+        text_color = "#2c3e50"
+        title_color = "white"
+        sidebar_bg = "rgba(255, 255, 255, 0.1)"
+        sidebar_text = "white"
+        footer_color = "white"
+    else:
+        # Light mode colors
+        bg_gradient = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
+        card_bg = "rgba(255, 255, 255, 0.98)"
+        text_color = "#2c3e50"
+        title_color = "#2c3e50"
+        sidebar_bg = "rgba(248, 249, 250, 0.95)"
+        sidebar_text = "#2c3e50"
+        footer_color = "#6c757d"
+    
+    return f"""
     <style>
         /* Import modern font */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         /* Main page background with gradient */
-        .stApp {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .stApp {{
+            background: {bg_gradient};
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
-        }
+        }}
         
         /* Modern card-style columns with glassmorphism effect */
-        [data-testid="column"] {
-            background: rgba(255, 255, 255, 0.95);
+        [data-testid="column"] {{
+            background: {card_bg};
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
@@ -37,77 +59,77 @@ st.markdown("""
             margin: 15px 5px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+        }}
         
-        [data-testid="column"]:hover {
+        [data-testid="column"]:hover {{
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-        }
+        }}
         
         /* Modern text styling with better readability */
-        .stMarkdown, .stSubheader, .stTitle, h1, h2, h3, p, span, div {
-            color: #2c3e50 !important;
+        .stMarkdown, .stSubheader, .stTitle, h1, h2, h3, p, span, div {{
+            color: {text_color} !important;
             font-weight: 400;
             line-height: 1.6;
-        }
+        }}
         
         /* Style headers specifically with modern typography */
-        .stHeadingContainer {
-            color: #2c3e50 !important;
-        }
+        .stHeadingContainer {{
+            color: {text_color} !important;
+        }}
         
         /* Modern title styling */
-        h1 {
+        h1 {{
             font-size: 2.5rem !important;
             font-weight: 700 !important;
-            color: white !important;
+            color: {title_color} !important;
             text-align: center;
             margin-bottom: 2rem !important;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
+        }}
         
         /* Subheader styling */
-        h2, .stSubheader {
+        h2, .stSubheader {{
             font-size: 1.5rem !important;
             font-weight: 600 !important;
             color: #34495e !important;
             margin-bottom: 1rem !important;
             border-bottom: 2px solid #3498db;
             padding-bottom: 0.5rem;
-        }
+        }}
         
         /* Modern alert styling */
-        .stWarning, .stInfo, .stSuccess {
+        .stWarning, .stInfo, .stSuccess {{
             border-radius: 12px !important;
             border: none !important;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-            color: #2c3e50 !important;
+            color: {text_color} !important;
             font-weight: 500 !important;
-        }
+        }}
         
-        .stSuccess {
+        .stSuccess {{
             background: linear-gradient(135deg, #00b09b, #96c93d) !important;
             color: white !important;
-        }
+        }}
         
-        .stWarning {
+        .stWarning {{
             background: linear-gradient(135deg, #f093fb, #f5576c) !important;
             color: white !important;
-        }
+        }}
         
-        .stInfo {
+        .stInfo {{
             background: linear-gradient(135deg, #4facfe, #00f2fe) !important;
             color: white !important;
-        }
+        }}
         
         /* Style footer text */
-        .footer {
-            color: white !important;
-        }
+        .footer {{
+            color: {footer_color} !important;
+        }}
         
         /* Modern input styling */
-        .stTextInput input {
-            color: #2c3e50 !important;
+        .stTextInput input {{
+            color: {text_color} !important;
             background: rgba(255, 255, 255, 0.9) !important;
             border: 2px solid rgba(116, 75, 162, 0.3) !important;
             border-radius: 12px !important;
@@ -115,16 +137,16 @@ st.markdown("""
             font-size: 16px !important;
             font-weight: 500 !important;
             transition: all 0.3s ease !important;
-        }
+        }}
         
-        .stTextInput input:focus {
+        .stTextInput input:focus {{
             border-color: #764ba2 !important;
             box-shadow: 0 0 0 3px rgba(116, 75, 162, 0.1) !important;
             outline: none !important;
-        }
+        }}
         
         /* Modern button styling with softer contrasting colors */
-        .stButton > button {
+        .stButton > button {{
             background: linear-gradient(135deg, #20bf6b 0%, #01a3a4 100%) !important;
             color: white !important;
             border: none !important;
@@ -135,153 +157,17 @@ st.markdown("""
             letter-spacing: 0.5px !important;
             transition: all 0.3s ease !important;
             box-shadow: 0 4px 15px rgba(32, 191, 107, 0.3) !important;
-        }
+        }}
         
-        .stButton > button:hover {
+        .stButton > button:hover {{
             transform: translateY(-2px) !important;
             box-shadow: 0 8px 25px rgba(32, 191, 107, 0.4) !important;
             background: linear-gradient(135deg, #0fb9b1 0%, #006ba6 100%) !important;
-        }
+        }}
         
-        .stButton > button:active {
+        .stButton > button:active {{
             transform: translateY(0) !important;
-        }
-        
-        /* Modern menu button styling */
-        button, [data-testid="baseButton-secondary"] {
-            color: white !important;
-            border-radius: 8px !important;
-        }
-        
-        /* Style all button text elements to be white */
-        button p, button span, button div, 
-        .stButton button p, .stButton button span, .stButton button div,
-        [data-testid="baseButton-secondary"] p,
-        [data-testid="baseButton-secondary"] span,
-        [data-testid="baseButton-secondary"] div {
-            color: white !important;
-        }
-        
-        /* Target menu buttons specifically */
-        [data-testid="MenuButton"] span, 
-        [data-testid="SettingsButton"] span,
-        [data-testid="ShareButton"] span,
-        [data-testid="rerunButton"] span {
-            color: white !important;
-        }
-        
-        /* Target any nested elements in buttons */
-        button *, .stButton button *, [data-testid="baseButton-secondary"] * {
-            color: white !important;
-        }
-        
-        /* Make all menu button text white */
-        [data-testid="StyledFullScreenButton"], 
-        [data-testid="menuButton"],
-        [data-baseweb="button"],
-        button[kind="minimal"] {
-            color: white !important;
-        }
-        
-        /* Target the three dots menu button and its contents */
-        .stDeployButton span,
-        .stDeployButton svg,
-        [data-testid="StyledFullScreenButton"] span,
-        [data-testid="StyledFullScreenButton"] svg,
-        [data-testid="menuButton"] span,
-        [data-testid="menuButton"] svg {
-            color: white !important;
-            fill: white !important;
-        }
-        
-        /* Target dropdown menu items */
-        [data-baseweb="menu"] li,
-        [data-baseweb="menu"] span,
-        [data-baseweb="menu"] svg {
-            color: white !important;
-        }
-        
-        /* Modern spacing and typography */
-        .stMarkdown h1 {
-            margin-bottom: 1rem !important;
-            font-weight: 700 !important;
-        }
-        .stMarkdown h2 {
-            margin-bottom: 0.8rem !important;
-            font-weight: 600 !important;
-        }
-        .stMarkdown h3 {
-            margin-bottom: 0.6rem !important;
-            margin-top: 1rem !important;
-            font-weight: 500 !important;
-        }
-        
-        /* Modern dividers */
-        hr {
-            margin: 1.5rem 0 !important;
-            border: none !important;
-            height: 1px !important;
-            background: linear-gradient(90deg, transparent, rgba(52, 73, 94, 0.3), transparent) !important;
-        }
-        
-        /* Enhanced column layout */
-        [data-testid="column"] {
-            padding: 30px !important;
-            min-height: 400px !important;
-        }
-        
-        /* Modern columns styling */
-        .stColumns [data-testid="column"] {
-            width: 50% !important;
-            flex: 1 1 50% !important;
-        }
-        
-        /* Better spacing for content */
-        .stMarkdown p {
-            margin-bottom: 0.8rem !important;
-            font-weight: 400 !important;
-        }
-
-        /* Modern column container */
-        .stColumns {
-            gap: 2rem !important;
-        }
-        
-        [data-testid="column"] {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 30px !important;
-            min-width: 45% !important;
-            margin: 0 !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Responsive layout */
-        .row-widget.stColumns {
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: stretch !important;
-        }
-        
-        /* Container improvements */
-        .block-container {
-            padding: 3rem 2rem !important;
-            max-width: 1200px !important;
-            margin: 0 auto !important;
-        }
-        
-        /* Content width */
-        [data-testid="column"] > div {
-            width: 100% !important;
-        }
-
-        /* Clean markdown spacing */
-        .stMarkdown {
-            margin: 0 !important;
-        }
+        }}
         
         /* Modern sidebar styling with glassmorphism */
         .stSidebar, 
@@ -295,17 +181,17 @@ st.markdown("""
         .stSidebar .stWarning,
         .stSidebar .stError,
         .stSidebar [data-testid="stMarkdownContainer"],
-        .stSidebar [data-testid="stText"] {
-            color: white !important;
+        .stSidebar [data-testid="stText"] {{
+            color: {sidebar_text} !important;
             font-weight: 400 !important;
-        }
+        }}
         
         /* Enhanced sidebar styling */
-        [data-testid="stSidebar"] {
-            background: rgba(255, 255, 255, 0.1) !important;
+        [data-testid="stSidebar"] {{
+            background: {sidebar_bg} !important;
             backdrop-filter: blur(15px) !important;
             border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
-        }
+        }}
         
         /* Sidebar content styling */
         [data-testid="stSidebar"] *,
@@ -313,73 +199,194 @@ st.markdown("""
         [data-testid="stSidebar"] .stMarkdown *,
         section[data-testid="stSidebar"] *,
         .css-1d391kg *,
-        .css-1lcbmhc * {
-            color: white !important;
+        .css-1lcbmhc * {{
+            color: {sidebar_text} !important;
             font-weight: 300 !important;
-        }
+        }}
+        
+        /* Modern spacing and layout */
+        .stMarkdown h1 {{
+            margin-bottom: 1rem !important;
+            font-weight: 700 !important;
+        }}
+        .stMarkdown h2 {{
+            margin-bottom: 0.8rem !important;
+            font-weight: 600 !important;
+        }}
+        .stMarkdown h3 {{
+            margin-bottom: 0.6rem !important;
+            margin-top: 1rem !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Modern dividers */
+        hr {{
+            margin: 1.5rem 0 !important;
+            border: none !important;
+            height: 1px !important;
+            background: linear-gradient(90deg, transparent, rgba(52, 73, 94, 0.3), transparent) !important;
+        }}
+        
+        /* Enhanced column layout */
+        [data-testid="column"] {{
+            padding: 30px !important;
+            min-height: 400px !important;
+        }}
+        
+        /* Modern columns styling */
+        .stColumns [data-testid="column"] {{
+            width: 50% !important;
+            flex: 1 1 50% !important;
+        }}
+        
+        /* Better spacing for content */
+        .stMarkdown p {{
+            margin-bottom: 0.8rem !important;
+            font-weight: 400 !important;
+        }}
+
+        /* Modern column container */
+        .stColumns {{
+            gap: 2rem !important;
+        }}
+        
+        /* Responsive layout */
+        .row-widget.stColumns {{
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: stretch !important;
+        }}
+        
+        /* Container improvements */
+        .block-container {{
+            padding: 3rem 2rem !important;
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+        }}
+        
+        /* Content width */
+        [data-testid="column"] > div {{
+            width: 100% !important;
+        }}
+
+        /* Clean markdown spacing */
+        .stMarkdown {{
+            margin: 0 !important;
+        }}
         
         /* Modern spacing control */
-        .stSubheader {
+        .stSubheader {{
             margin-bottom: 1rem !important;
-        }
+        }}
         
         /* Modern category headers with gradients */
-        .category-header-main {
+        .category-header-main {{
             font-size: 1.4rem !important;
             font-weight: 600 !important;
             margin-bottom: 1rem !important;
-            color: #2c3e50 !important;
+            color: {text_color} !important;
             background: linear-gradient(135deg, #667eea, #764ba2);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
+        }}
         
-        .category-header-secondary {
+        .category-header-secondary {{
             font-size: 1.4rem !important;
             font-weight: 600 !important;
             margin-bottom: 1rem !important;
-            color: #2c3e50 !important;
+            color: {text_color} !important;
             background: linear-gradient(135deg, #667eea, #764ba2);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
+        }}
         
         /* Modern variants header */
-        .variants-header {
+        .variants-header {{
             font-size: 1.2rem !important;
             font-weight: 500 !important;
             margin-bottom: 0.8rem !important;
             color: #34495e !important;
             border-left: 4px solid #3498db;
             padding-left: 1rem;
-        }
+        }}
         
         /* Modern links styling */
-        a {
+        a {{
             color: #3498db !important;
             text-decoration: none !important;
             font-weight: 500 !important;
             transition: color 0.3s ease !important;
-        }
+        }}
         
-        a:hover {
+        a:hover {{
             color: #2980b9 !important;
-        }
+        }}
         
         /* Modern loading spinner */
-        .stSpinner {
-            color: white !important;
-        }
+        .stSpinner {{
+            color: {title_color} !important;
+        }}
         
         /* Better result item styling */
-        .stMarkdown p strong {
-            color: #2c3e50 !important;
+        .stMarkdown p strong {{
+            color: {text_color} !important;
             font-weight: 600 !important;
-        }
+        }}
+        
+        /* Menu button styling */
+        button, [data-testid="baseButton-secondary"] {{
+            color: white !important;
+            border-radius: 8px !important;
+        }}
+        
+        button p, button span, button div, 
+        .stButton button p, .stButton button span, .stButton button div,
+        [data-testid="baseButton-secondary"] p,
+        [data-testid="baseButton-secondary"] span,
+        [data-testid="baseButton-secondary"] div {{
+            color: white !important;
+        }}
+        
+        [data-testid="MenuButton"] span, 
+        [data-testid="SettingsButton"] span,
+        [data-testid="ShareButton"] span,
+        [data-testid="rerunButton"] span {{
+            color: white !important;
+        }}
+        
+        button *, .stButton button *, [data-testid="baseButton-secondary"] * {{
+            color: white !important;
+        }}
+        
+        [data-testid="StyledFullScreenButton"], 
+        [data-testid="menuButton"],
+        [data-baseweb="button"],
+        button[kind="minimal"] {{
+            color: white !important;
+        }}
+        
+        .stDeployButton span,
+        .stDeployButton svg,
+        [data-testid="StyledFullScreenButton"] span,
+        [data-testid="StyledFullScreenButton"] svg,
+        [data-testid="menuButton"] span,
+        [data-testid="menuButton"] svg {{
+            color: white !important;
+            fill: white !important;
+        }}
+        
+        [data-baseweb="menu"] li,
+        [data-baseweb="menu"] span,
+        [data-baseweb="menu"] svg {{
+            color: white !important;
+        }}
     </style>
-""", unsafe_allow_html=True)
+    """
+
+st.markdown(get_theme_css(st.session_state.dark_mode), unsafe_allow_html=True)
 
 # Debug mode - set to False to remove sidebar output
 DEBUG = True
@@ -613,9 +620,16 @@ def search_google(query):
                 st.sidebar.write(f"HTTP Status: {e.resp.status}")
                 st.sidebar.write(f"Error details: {e.content}")
         return []
-
+        
 # Main UI
 st.title("Barcode Product Lookup")
+
+# Theme toggle button
+col1, col2 = st.columns([4, 1])
+with col2:
+    if st.button("🌓 Toggle Theme"):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        st.rerun()
 
 # Input with immediate validation
 barcode = st.text_input("Enter barcode number")
