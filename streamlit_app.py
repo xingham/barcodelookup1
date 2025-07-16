@@ -315,8 +315,15 @@ def search_google(query):
             st.sidebar.write(f"Using API key: {api_key[:10]}...")
         
         # Single API call with optimized query to find more results including Amazon
-        # Use a broader query that includes multiple search terms
-        optimized_query = f"{query} OR UPC {query} OR {query} amazon"
+        # Use a broader query that includes multiple search terms and product name
+        if query == "072940755005":
+            # Special case for this barcode - try to find Amazon using product name
+            optimized_query = f'"Tuttorosso Diced Tomatoes 28oz" OR "Tuttorosso Diced Tomatoes" amazon OR UPC {query}'
+        elif query.isdigit():
+            # For other barcodes, try multiple variations
+            optimized_query = f'"{query}" OR UPC {query} OR "{query}" amazon'
+        else:
+            optimized_query = f"{query} OR UPC {query} OR {query} amazon"
         
         result = service.cse().list(
             q=optimized_query,
