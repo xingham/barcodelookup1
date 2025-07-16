@@ -352,41 +352,63 @@ def search_google(query):
                     if 'amazon' in domain.lower():
                         st.sidebar.write(f"🟢 Amazon result found: {title[:50]}...")
                 
-                # Enhanced PDF filtering - check multiple indicators
+                # Enhanced file filtering - check for PDFs and other document types
                 link_lower = link.lower()
                 snippet_lower = item.get('snippet', '').lower()
                 title_upper = title.upper()
                 
-                # Check for PDF indicators - more comprehensive check
-                is_pdf = (
+                # Check for file indicators - PDFs, Excel, Word docs, etc.
+                is_file = (
+                    # PDF checks
                     link_lower.endswith('.pdf') or
                     'filetype:pdf' in link_lower or
-                    '.pdf' in link_lower or  # This should catch the nyswicvendors example
+                    '.pdf' in link_lower or
                     '/uploads/' in link_lower and ('pdf' in link_lower or link_lower.endswith('.pdf')) or
                     'wp-content' in link_lower and ('pdf' in link_lower or link_lower.endswith('.pdf')) or
-                    '/wp-content/uploads/' in link_lower or  # Common WordPress PDF path
+                    '/wp-content/uploads/' in link_lower or
                     'pdf' in snippet_lower or
                     '[PDF]' in title or
                     'PDF' in title_upper or
                     title_upper.endswith('.PDF') or
-                    '.pdf?' in link_lower or  # PDFs with query parameters
-                    '.pdf#' in link_lower    # PDFs with anchors
+                    '.pdf?' in link_lower or
+                    '.pdf#' in link_lower or
+                    # Excel/Office file checks
+                    link_lower.endswith('.xlsx') or
+                    link_lower.endswith('.xls') or
+                    link_lower.endswith('.docx') or
+                    link_lower.endswith('.doc') or
+                    link_lower.endswith('.pptx') or
+                    link_lower.endswith('.ppt') or
+                    '.xlsx' in link_lower or
+                    '.xls' in link_lower or
+                    '.docx' in link_lower or
+                    '.doc' in link_lower or
+                    '.pptx' in link_lower or
+                    '.ppt' in link_lower or
+                    'filetype:xlsx' in link_lower or
+                    'filetype:xls' in link_lower or
+                    'filetype:docx' in link_lower or
+                    'filetype:doc' in link_lower
                 )
                 
-                if is_pdf:
+                if is_file:
                     if DEBUG:
                         reasons = []
                         if link_lower.endswith('.pdf'):
-                            reasons.append("ends with .pdf")
-                        if '.pdf' in link_lower:
-                            reasons.append("contains .pdf")
+                            reasons.append("PDF file")
+                        if link_lower.endswith('.xlsx') or link_lower.endswith('.xls'):
+                            reasons.append("Excel file")
+                        if link_lower.endswith('.docx') or link_lower.endswith('.doc'):
+                            reasons.append("Word document")
+                        if link_lower.endswith('.pptx') or link_lower.endswith('.ppt'):
+                            reasons.append("PowerPoint file")
                         if '/wp-content/uploads/' in link_lower:
                             reasons.append("wp-content/uploads path")
                         if 'pdf' in snippet_lower:
                             reasons.append("pdf in snippet")
                         if '[PDF]' in title or 'PDF' in title_upper:
                             reasons.append("PDF in title")
-                        st.sidebar.write(f"🔴 PDF filtered: {title[:30]}...")
+                        st.sidebar.write(f"🔴 File filtered: {title[:30]}...")
                         st.sidebar.write(f"   Reason: {', '.join(reasons)}")
                         st.sidebar.write(f"   URL: {link[:50]}...")
                     continue
