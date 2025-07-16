@@ -300,8 +300,7 @@ def search_google(query):
         if cached_results:
             if DEBUG:
                 st.sidebar.info("Using cached results")
-            return [r for r in cached_results if not any(site in r.get('link', '').lower() 
-                   for site in ['barcodespider.com', 'github.com'])]
+            return cached_results
 
         api_key = get_next_api_key()
         if not api_key:
@@ -311,19 +310,18 @@ def search_google(query):
         
         service = build('customsearch', 'v1', developerKey=api_key)
         
-        # Simple search query with exclusions (no quotes needed with exactTerms)
-        search_query = f'{query} -site:barcodespider.com -site:github.com -site:gist.github.com'
+        # Simple search query - no restrictions, no exclusions
+        search_query = query
         
         if DEBUG:
             st.sidebar.write(f"Search Query: {search_query}")
             st.sidebar.write(f"Using API key: {api_key[:10]}...")
         
-        # Make single API call
+        # Make single API call with minimal parameters
         result = service.cse().list(
             q=search_query,
             cx=GOOGLE_CSE_ID,
-            num=10,
-            exactTerms=query
+            num=10
         ).execute()
         
         if DEBUG:
@@ -334,14 +332,9 @@ def search_google(query):
         filtered_results = []
         if 'items' in result:
             for item in result['items']:
-                link = item.get('link', '').lower()
                 title = item.get('title', '')
                 
-                # Only exclude barcodespider and github
-                if any(site in link for site in ['barcodespider.com', 'github.com']):
-                    continue
-                
-                # Clean up title
+                # Clean up title (keep this minimal cleanup)
                 for suffix in [' | Walmart', ' : Target', ' - Best Buy', ' @ Amazon.com']:
                     title = title.replace(suffix, '')
                 
@@ -354,6 +347,9 @@ def search_google(query):
 
         if filtered_results:
             save_search_results(query, filtered_results)
+        
+        if DEBUG:
+            st.sidebar.write(f"Final filtered results: {len(filtered_results)}")
         
         return filtered_results
 
