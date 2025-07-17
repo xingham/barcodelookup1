@@ -389,9 +389,15 @@ def get_theme_css(dark_mode=True):
             color: {title_color} !important;
         }}
         
-        /* Better result item styling */
+        /* Better result item styling - conditional based on theme */
         .stMarkdown p strong {{
-            color: white !important;
+            color: {'white' if dark_mode else text_color} !important;
+            font-weight: 600 !important;
+        }}
+        
+        /* Force strong text in result cards to match theme */
+        .results-columns .stMarkdown p strong {{
+            color: {'white' if dark_mode else text_color} !important;
             font-weight: 600 !important;
         }}
         
