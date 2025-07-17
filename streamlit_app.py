@@ -12,6 +12,12 @@ if 'current_key_index' not in st.session_state:
     st.session_state.current_key_index = 0
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
+if 'search_history' not in st.session_state:
+    st.session_state.search_history = []
+if 'brand_analytics' not in st.session_state:
+    st.session_state.brand_analytics = {}
+if 'search_count' not in st.session_state:
+    st.session_state.search_count = 0
 
 # Configure page with custom styling
 st.set_page_config(page_title="Barcode Product Lookup", layout="wide")
@@ -538,6 +544,45 @@ def get_cached_results(barcode):
             return json.load(f)["results"]
     return None
 
+def track_search_analytics(barcode, results):
+    """Track search analytics for brands and products"""
+    # Add to search history
+    search_entry = {
+        "barcode": barcode,
+        "timestamp": datetime.now().isoformat(),
+        "results_count": len(results),
+        "has_upc_results": any(item.get('source') == 'UPC' for item in results),
+        "has_google_results": any(item.get('source') == 'Google' for item in results)
+    }
+    
+    st.session_state.search_history.append(search_entry)
+    st.session_state.search_count += 1
+    
+    # Track brand analytics
+    for result in results:
+        if 'title' in result:
+            title = result['title'].lower()
+            # Extract potential brand names (simple heuristic)
+            words = title.split()
+            for word in words[:3]:  # Check first 3 words for brand names
+                if len(word) > 2 and word.isalpha():
+                    brand = word.title()
+                    if brand not in st.session_state.brand_analytics:
+                        st.session_state.brand_analytics[brand] = {
+                            'count': 0,
+                            'first_seen': datetime.now().isoformat(),
+                            'last_seen': datetime.now().isoformat(),
+                            'barcodes': []
+                        }
+                    st.session_state.brand_analytics[brand]['count'] += 1
+                    st.session_state.brand_analytics[brand]['last_seen'] = datetime.now().isoformat()
+                    if barcode not in st.session_state.brand_analytics[brand]['barcodes']:
+                        st.session_state.brand_analytics[brand]['barcodes'].append(barcode)
+    
+    # Keep only last 1000 searches to prevent memory issues
+    if len(st.session_state.search_history) > 1000:
+        st.session_state.search_history = st.session_state.search_history[-1000:]
+
 def search_google(query):
     try:
         # Temporarily disable cache to test new PDF filtering
@@ -689,82 +734,187 @@ def search_google(query):
 # Main UI
 st.title("Barcode Product Lookup")
 
-# Theme toggle button
-col1, col2 = st.columns([4, 1])
-with col1:
-    pass  # Empty column for spacing
-with col2:
-    if st.button("🌓 Toggle Theme"):
-        st.session_state.dark_mode = not st.session_state.dark_mode
-        st.experimental_rerun()
+# Create tabs
+tab1, tab2 = st.tabs(["🔍 Search", "📊 Analytics & Insights"])
 
-# Wrap the theme toggle in a custom class
-st.markdown('<div class="header-columns">', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+with tab1:
+    # Theme toggle button
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        pass  # Empty column for spacing
+    with col2:
+        if st.button("🌓 Toggle Theme"):
+            st.session_state.dark_mode = not st.session_state.dark_mode
+            st.experimental_rerun()
 
-# Input with immediate validation
-barcode = st.text_input("Enter barcode number")
-if barcode:
-    if not barcode.isdigit():
-        st.warning("Please enter only numbers for the barcode")
-    elif len(barcode) < 8:
-        st.warning("Barcode must be at least 8 digits")
+    # Wrap the theme toggle in a custom class
+    st.markdown('<div class="header-columns">', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Input with immediate validation and Enter key support
+    barcode = st.text_input("Enter barcode number", key="barcode_input")
+    
+    # Check if Enter was pressed (form submission)
+    search_triggered = False
+    
+    if barcode:
+        if not barcode.isdigit():
+            st.warning("Please enter only numbers for the barcode")
+        elif len(barcode) < 8:
+            st.warning("Barcode must be at least 8 digits")
+        else:
+            st.success("Valid barcode entered")
+            # Auto-trigger search when valid barcode is entered
+            search_triggered = True
+
+    # Search button with progress indicators OR Enter key trigger
+    if (st.button("Search") or search_triggered) and barcode and barcode.isdigit():
+        with st.spinner("Searching databases..."):
+            # Wrap results columns in custom class for styling
+            st.markdown('<div class="results-columns">', unsafe_allow_html=True)
+            
+            # Create two equal columns
+            col1, col2 = st.columns([1, 1])  # Equal width columns
+            
+            # Collect all results for analytics
+            all_results = []
+            
+            # First column - UPCItemDB Results
+            with col1:
+                st.subheader("UPCItemDB")
+                upc_results = search_upcitemdb(barcode)
+                if upc_results:
+                    for item in upc_results:
+                        item['source'] = 'UPC'  # Add source for analytics
+                        all_results.append(item)
+                        st.write("---")
+                        upc_link = f"https://www.upcitemdb.com/upc/{barcode}"
+                        if 'title' in item:
+                            st.markdown(f"**Product:** [{item['title']}]({upc_link})")
+                        if 'variants' in item:
+                            st.markdown("<div class='variants-header'>Variants:</div>", unsafe_allow_html=True)
+                            for variant in item['variants']:
+                                st.write(f"- {variant}")
+                else:
+                    st.info("No UPC results found")
+
+            # Second column - Google Search Results
+            with col2:
+                st.subheader("Google Search Results")
+                google_results = search_google(barcode)
+                if google_results:
+                    for item in google_results:
+                        all_results.append(item)  # Google results already have source
+                        st.write("---")
+                        title = item.get('title', 'No title')
+                        link = item.get('link', '#')
+                        
+                        # Extract domain from link and format it
+                        from urllib.parse import urlparse
+                        domain = urlparse(link).netloc.replace('www.', '')
+                        domain = domain.split('.')[0].title()
+                        
+                        # Display domain header and result (show all domains equally)
+                        st.markdown(f"<div style='font-weight: bold; color: white; margin-bottom: 5px;'>{domain}</div>", 
+                                  unsafe_allow_html=True)
+                        st.markdown(f"[{title}]({link})")
+                else:
+                    st.info("No Google results found")
+                    # Add manual search link
+                    google_search_url = f"https://www.google.com/search?q={barcode}"
+                    st.markdown(f"[🔍 Search Google manually for: {barcode}]({google_search_url})")
+            
+            # Track analytics for this search
+            track_search_analytics(barcode, all_results)
+                    
+            # Close the results columns div
+            st.markdown('</div>', unsafe_allow_html=True)
+
+with tab2:
+    # Analytics & Insights Tab
+    st.header("📊 Analytics & Insights")
+    
+    if st.session_state.search_count == 0:
+        st.info("No searches performed yet. Start searching to see analytics!")
     else:
-        st.success("Valid barcode entered")
-
-# Search button with progress indicators
-if st.button("Search") and barcode and barcode.isdigit():
-    with st.spinner("Searching databases..."):
-        # Wrap results columns in custom class for styling
-        st.markdown('<div class="results-columns">', unsafe_allow_html=True)
-        
-        # Create two equal columns
-        col1, col2 = st.columns([1, 1])  # Equal width columns
-        
-        # First column - UPCItemDB Results
+        # Overall stats
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.subheader("UPCItemDB")
-            upc_results = search_upcitemdb(barcode)
-            if upc_results:
-                for item in upc_results:
-                    st.write("---")
-                    upc_link = f"https://www.upcitemdb.com/upc/{barcode}"
-                    if 'title' in item:
-                        st.markdown(f"**Product:** [{item['title']}]({upc_link})")
-                    if 'variants' in item:
-                        st.markdown("<div class='variants-header'>Variants:</div>", unsafe_allow_html=True)
-                        for variant in item['variants']:
-                            st.write(f"- {variant}")
-            else:
-                st.info("No UPC results found")
-
-        # Second column - Google Search Results
+            st.metric("Total Searches", st.session_state.search_count)
         with col2:
-            st.subheader("Google Search Results")
-            google_results = search_google(barcode)
-            if google_results:
-                for item in google_results:
-                    st.write("---")
-                    title = item.get('title', 'No title')
-                    link = item.get('link', '#')
-                    
-                    # Extract domain from link and format it
-                    from urllib.parse import urlparse
-                    domain = urlparse(link).netloc.replace('www.', '')
-                    domain = domain.split('.')[0].title()
-                    
-                    # Display domain header and result (show all domains equally)
-                    st.markdown(f"<div style='font-weight: bold; color: white; margin-bottom: 5px;'>{domain}</div>", 
-                              unsafe_allow_html=True)
-                    st.markdown(f"[{title}]({link})")
-            else:
-                st.info("No Google results found")
-                # Add manual search link
-                google_search_url = f"https://www.google.com/search?q={barcode}"
-                st.markdown(f"[🔍 Search Google manually for: {barcode}]({google_search_url})")
+            st.metric("Unique Brands", len(st.session_state.brand_analytics))
+        with col3:
+            recent_searches = len([s for s in st.session_state.search_history if 
+                                 (datetime.now() - datetime.fromisoformat(s['timestamp'])).days < 7])
+            st.metric("Searches (Last 7 Days)", recent_searches)
+        
+        st.markdown("---")
+        
+        # Top Brands
+        st.subheader("🏆 Most Searched Brands")
+        if st.session_state.brand_analytics:
+            # Sort brands by search count
+            sorted_brands = sorted(st.session_state.brand_analytics.items(), 
+                                 key=lambda x: x[1]['count'], reverse=True)
+            
+            # Display top 10 brands
+            for i, (brand, data) in enumerate(sorted_brands[:10], 1):
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col1:
+                    st.write(f"**#{i}**")
+                with col2:
+                    st.write(f"**{brand}**")
+                with col3:
+                    st.write(f"{data['count']} searches")
+        else:
+            st.info("No brand data available yet.")
+        
+        st.markdown("---")
+        
+        # Recent Search History
+        st.subheader("🕐 Recent Search History")
+        if st.session_state.search_history:
+            # Show last 20 searches
+            recent_searches = st.session_state.search_history[-20:]
+            recent_searches.reverse()  # Show most recent first
+            
+            for search in recent_searches:
+                timestamp = datetime.fromisoformat(search['timestamp'])
+                formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
                 
-        # Close the results columns div
-        st.markdown('</div>', unsafe_allow_html=True)
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.write(f"**{search['barcode']}**")
+                with col2:
+                    st.write(f"{search['results_count']} results")
+                with col3:
+                    st.write(formatted_time)
+        else:
+            st.info("No search history available.")
+        
+        st.markdown("---")
+        
+        # Search Success Rate
+        st.subheader("📈 Search Success Rate")
+        if st.session_state.search_history:
+            total_searches = len(st.session_state.search_history)
+            successful_searches = len([s for s in st.session_state.search_history if s['results_count'] > 0])
+            success_rate = (successful_searches / total_searches) * 100 if total_searches > 0 else 0
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Success Rate", f"{success_rate:.1f}%")
+            with col2:
+                st.metric("Successful Searches", f"{successful_searches}/{total_searches}")
+        
+        # Clear analytics button
+        st.markdown("---")
+        if st.button("🗑️ Clear Analytics Data"):
+            st.session_state.search_history = []
+            st.session_state.brand_analytics = {}
+            st.session_state.search_count = 0
+            st.success("Analytics data cleared!")
+            st.experimental_rerun()
 
 # Add footer with enhanced styling
 st.markdown("---")
