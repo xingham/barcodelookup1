@@ -431,9 +431,33 @@ def get_theme_css(dark_mode=True):
         /* Variant list items styling */
         .results-columns .stMarkdown ul li,
         .results-columns .stWrite ul li {{
-            color: #34495e !important;
+            color: #2c3e50 !important;
             font-weight: 500 !important;
             margin-bottom: 0.3rem !important;
+        }}
+        
+        /* Fix Product and Variants text visibility in cards */
+        .results-columns .stMarkdown strong,
+        .results-columns .stWrite strong,
+        .results-columns strong {{
+            color: #2c3e50 !important;
+            font-weight: 700 !important;
+        }}
+        
+        /* Fix all text content in result cards */
+        .results-columns .stMarkdown,
+        .results-columns .stWrite,
+        .results-columns p,
+        .results-columns li,
+        .results-columns span,
+        .results-columns div:not(.variants-header) {{
+            color: #2c3e50 !important;
+        }}
+        
+        /* Ensure bullet points and dashes are visible */
+        .results-columns .stMarkdown p:contains("**Product:**"),
+        .results-columns .stMarkdown p:contains("- ") {{
+            color: #2c3e50 !important;
         }}
         
         /* Menu button styling */
