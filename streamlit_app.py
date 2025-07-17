@@ -117,17 +117,18 @@ def get_theme_css(dark_mode=True):
             color: white !important;
         }}
         
-        /* Card content has proper white text - OVERRIDE ALL */
-        .results-columns .stMarkdown, 
-        .results-columns .stSubheader, 
-        .results-columns h1, 
-        .results-columns h2, 
-        .results-columns h3, 
-        .results-columns p, 
-        .results-columns span, 
-        .results-columns div,
+        /* Card content has proper white text - SIMPLE AND CLEAN */
         .results-columns * {{
             color: white !important;
+        }}
+        
+        /* Keep links blue */
+        .results-columns a {{
+            color: #3498db !important;
+        }}
+        
+        .results-columns a:hover {{
+            color: #2980b9 !important;
         }}
         
         /* Style headers specifically with modern typography */
@@ -159,30 +160,6 @@ def get_theme_css(dark_mode=True):
         /* Force subheaders in result cards to be white */
         .results-columns h2, 
         .results-columns .stSubheader {{
-            color: white !important;
-        }}
-        
-        /* Modern alert styling */
-        .stWarning, .stInfo, .stSuccess {{
-            border-radius: 12px !important;
-            border: none !important;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-            color: white !important;
-            font-weight: 500 !important;
-        }}
-        
-        .stSuccess {{
-            background: linear-gradient(135deg, #00b09b, #96c93d) !important;
-            color: white !important;
-        }}
-        
-        .stWarning {{
-            background: linear-gradient(135deg, #f093fb, #f5576c) !important;
-            color: white !important;
-        }}
-        
-        .stInfo {{
-            background: linear-gradient(135deg, #4facfe, #00f2fe) !important;
             color: white !important;
         }}
         
@@ -385,19 +362,14 @@ def get_theme_css(dark_mode=True):
             -webkit-text-fill-color: transparent;
         }}
         
-        /* Modern variants header - FORCE WHITE IN CARDS */
+        /* Modern variants header - NO BLUE COLOR */
         .variants-header {{
             font-size: 1.2rem !important;
             font-weight: 500 !important;
             margin-bottom: 0.8rem !important;
-            color: #34495e !important;
+            color: white !important;
             border-left: 4px solid #3498db;
             padding-left: 1rem;
-        }}
-        
-        /* Override variants header in result cards to be WHITE */
-        .results-columns .variants-header {{
-            color: white !important;
         }}
         
         /* Modern links styling */
@@ -412,13 +384,6 @@ def get_theme_css(dark_mode=True):
             color: #2980b9 !important;
         }}
         
-        /* Force ONLY text labels (not links) in result cards to be WHITE */
-        .results-columns [data-testid="column"] .stMarkdown p strong:not(a),
-        .results-columns [data-testid="column"] strong:not(a),
-        .results-columns .variants-header {{
-            color: white !important;
-        }}
-        
         /* Modern loading spinner */
         .stSpinner {{
             color: {title_color} !important;
@@ -426,22 +391,8 @@ def get_theme_css(dark_mode=True):
         
         /* Better result item styling */
         .stMarkdown p strong {{
-            color: {text_color} !important;
-            font-weight: 600 !important;
-        }}
-        
-        /* FINAL SOLUTION - Override everything in result cards except links */
-        .results-columns [data-testid="column"] * {{
             color: white !important;
-        }}
-        
-        /* Keep links blue */
-        .results-columns [data-testid="column"] a {{
-            color: #3498db !important;
-        }}
-        
-        .results-columns [data-testid="column"] a:hover {{
-            color: #2980b9 !important;
+            font-weight: 600 !important;
         }}
         
         /* Menu button styling */
