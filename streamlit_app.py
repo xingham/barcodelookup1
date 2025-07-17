@@ -117,9 +117,9 @@ def get_theme_css(dark_mode=True):
             color: white !important;
         }}
         
-        /* Card content has proper white text - SIMPLE AND CLEAN */
+        /* Card content text color - conditional based on theme */
         .results-columns * {{
-            color: white !important;
+            color: {'white' if dark_mode else text_color} !important;
         }}
         
         /* Keep links blue */
@@ -157,10 +157,10 @@ def get_theme_css(dark_mode=True):
             padding-bottom: 0.5rem;
         }}
         
-        /* Force subheaders in result cards to be white */
+        /* Force subheaders in result cards to match theme */
         .results-columns h2, 
         .results-columns .stSubheader {{
-            color: white !important;
+            color: {'white' if dark_mode else text_color} !important;
         }}
         
         /* Enhanced footer styling */
@@ -362,12 +362,12 @@ def get_theme_css(dark_mode=True):
             -webkit-text-fill-color: transparent;
         }}
         
-        /* Modern variants header - NO BLUE COLOR */
+        /* Modern variants header - conditional color based on theme */
         .variants-header {{
             font-size: 1.2rem !important;
             font-weight: 500 !important;
             margin-bottom: 0.8rem !important;
-            color: white !important;
+            color: {'white' if dark_mode else text_color} !important;
             border-left: 4px solid #3498db;
             padding-left: 1rem;
         }}
