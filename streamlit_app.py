@@ -117,7 +117,7 @@ def get_theme_css(dark_mode=True):
             color: white !important;
         }}
         
-        /* Card content has proper white text */
+        /* Card content has proper white text - OVERRIDE ALL */
         .results-columns .stMarkdown, 
         .results-columns .stSubheader, 
         .results-columns h1, 
@@ -125,7 +125,8 @@ def get_theme_css(dark_mode=True):
         .results-columns h3, 
         .results-columns p, 
         .results-columns span, 
-        .results-columns div {{
+        .results-columns div,
+        .results-columns * {{
             color: white !important;
         }}
         
@@ -145,14 +146,20 @@ def get_theme_css(dark_mode=True):
             letter-spacing: -0.02em;
         }}
         
-        /* Subheader styling */
+        /* Subheader styling - WHITE TEXT IN CARDS */
         h2, .stSubheader {{
             font-size: 1.5rem !important;
             font-weight: 600 !important;
-            color: #34495e !important;
+            color: {content_text_color} !important;
             margin-bottom: 1rem !important;
             border-bottom: 2px solid #3498db;
             padding-bottom: 0.5rem;
+        }}
+        
+        /* Force subheaders in result cards to be white */
+        .results-columns h2, 
+        .results-columns .stSubheader {{
+            color: white !important;
         }}
         
         /* Modern alert styling */
