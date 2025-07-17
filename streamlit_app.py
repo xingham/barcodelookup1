@@ -117,7 +117,7 @@ def get_theme_css(dark_mode=True):
             color: white !important;
         }}
         
-        /* Card content has proper contrast */
+        /* Card content has proper white text */
         .results-columns .stMarkdown, 
         .results-columns .stSubheader, 
         .results-columns h1, 
@@ -126,7 +126,7 @@ def get_theme_css(dark_mode=True):
         .results-columns p, 
         .results-columns span, 
         .results-columns div {{
-            color: {text_color} !important;
+            color: white !important;
         }}
         
         /* Style headers specifically with modern typography */
@@ -411,16 +411,16 @@ def get_theme_css(dark_mode=True):
             font-weight: 600 !important;
         }}
         
-        /* Enhanced UPC Item DB result styling */
+        /* Enhanced UPC Item DB result styling - WHITE TEXT */
         .results-columns .stMarkdown p strong {{
-            color: #2c3e50 !important;
+            color: white !important;
             font-weight: 700 !important;
             font-size: 1.1rem !important;
         }}
         
-        /* Variants header styling in cards */
+        /* Variants header styling in cards - WHITE TEXT */
         .results-columns .variants-header {{
-            color: #2c3e50 !important;
+            color: white !important;
             font-weight: 600 !important;
             font-size: 1.1rem !important;
             margin-bottom: 0.8rem !important;
@@ -428,48 +428,48 @@ def get_theme_css(dark_mode=True):
             padding-left: 1rem !important;
         }}
         
-        /* Variant list items styling */
+        /* Variant list items styling - WHITE TEXT */
         .results-columns .stMarkdown ul li,
         .results-columns .stWrite ul li {{
-            color: #2c3e50 !important;
+            color: white !important;
             font-weight: 500 !important;
             margin-bottom: 0.3rem !important;
         }}
         
-        /* Fix Product and Variants text visibility in cards - MORE SPECIFIC */
+        /* Fix Product and Variants text visibility in cards - WHITE TEXT */
         .results-columns [data-testid="column"] .stMarkdown strong,
         .results-columns [data-testid="column"] .stWrite strong,
         .results-columns [data-testid="column"] strong,
         .results-columns [data-testid="column"] p strong {{
-            color: #1a252f !important;
+            color: white !important;
             font-weight: 700 !important;
             font-size: 1.1rem !important;
         }}
         
-        /* Fix all text content in result cards - FORCE OVERRIDE */
+        /* Fix all text content in result cards - WHITE TEXT */
         .results-columns [data-testid="column"] .stMarkdown,
         .results-columns [data-testid="column"] .stWrite,
         .results-columns [data-testid="column"] p,
         .results-columns [data-testid="column"] li,
         .results-columns [data-testid="column"] span,
         .results-columns [data-testid="column"] div:not(.variants-header) {{
-            color: #1a252f !important;
+            color: white !important;
         }}
         
-        /* Ultra-specific targeting for Product text */
+        /* Ultra-specific targeting for Product text - WHITE */
         .results-columns [data-testid="column"] .stMarkdown p {{
-            color: #1a252f !important;
+            color: white !important;
         }}
         
-        /* Ultra-specific targeting for bold text like **Product:** */
+        /* Ultra-specific targeting for bold text like **Product:** - WHITE */
         .results-columns [data-testid="column"] .stMarkdown p strong {{
-            color: #1a252f !important;
+            color: white !important;
             font-weight: 800 !important;
         }}
         
-        /* Ensure bullet points and dashes are visible */
+        /* Ensure bullet points and dashes are visible - WHITE */
         .results-columns [data-testid="column"] .stWrite p {{
-            color: #1a252f !important;
+            color: white !important;
         }}
         
         /* Menu button styling */
