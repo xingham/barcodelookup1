@@ -411,6 +411,31 @@ def get_theme_css(dark_mode=True):
             font-weight: 600 !important;
         }}
         
+        /* Enhanced UPC Item DB result styling */
+        .results-columns .stMarkdown p strong {{
+            color: #2c3e50 !important;
+            font-weight: 700 !important;
+            font-size: 1.1rem !important;
+        }}
+        
+        /* Variants header styling in cards */
+        .results-columns .variants-header {{
+            color: #2c3e50 !important;
+            font-weight: 600 !important;
+            font-size: 1.1rem !important;
+            margin-bottom: 0.8rem !important;
+            border-left: 4px solid #3498db !important;
+            padding-left: 1rem !important;
+        }}
+        
+        /* Variant list items styling */
+        .results-columns .stMarkdown ul li,
+        .results-columns .stWrite ul li {{
+            color: #34495e !important;
+            font-weight: 500 !important;
+            margin-bottom: 0.3rem !important;
+        }}
+        
         /* Menu button styling */
         button, [data-testid="baseButton-secondary"] {{
             color: white !important;
