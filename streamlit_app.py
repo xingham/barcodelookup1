@@ -430,86 +430,18 @@ def get_theme_css(dark_mode=True):
             font-weight: 600 !important;
         }}
         
-        /* Enhanced UPC Item DB result styling - WHITE TEXT */
-        .results-columns .stMarkdown p strong {{
-            color: white !important;
-            font-weight: 700 !important;
-            font-size: 1.1rem !important;
-        }}
-        
-        /* Variants header styling in cards - WHITE TEXT */
-        .results-columns .variants-header {{
-            color: white !important;
-            font-weight: 600 !important;
-            font-size: 1.1rem !important;
-            margin-bottom: 0.8rem !important;
-            border-left: 4px solid #3498db !important;
-            padding-left: 1rem !important;
-        }}
-        
-        /* Variant list items styling - WHITE TEXT */
-        .results-columns .stMarkdown ul li,
-        .results-columns .stWrite ul li {{
-            color: white !important;
-            font-weight: 500 !important;
-            margin-bottom: 0.3rem !important;
-        }}
-        
-        /* Fix Product and Variants text visibility in cards - WHITE TEXT */
-        .results-columns [data-testid="column"] .stMarkdown strong,
-        .results-columns [data-testid="column"] .stWrite strong,
-        .results-columns [data-testid="column"] strong,
-        .results-columns [data-testid="column"] p strong {{
-            color: white !important;
-            font-weight: 700 !important;
-            font-size: 1.1rem !important;
-        }}
-        
-        /* Fix all text content in result cards - WHITE TEXT */
-        .results-columns [data-testid="column"] .stMarkdown,
-        .results-columns [data-testid="column"] .stWrite,
-        .results-columns [data-testid="column"] p,
-        .results-columns [data-testid="column"] li,
-        .results-columns [data-testid="column"] span,
-        .results-columns [data-testid="column"] div:not(.variants-header) {{
+        /* FINAL SOLUTION - Override everything in result cards except links */
+        .results-columns [data-testid="column"] * {{
             color: white !important;
         }}
         
-        /* Ultra-specific targeting for Product text - WHITE */
-        .results-columns [data-testid="column"] .stMarkdown p {{
-            color: white !important;
+        /* Keep links blue */
+        .results-columns [data-testid="column"] a {{
+            color: #3498db !important;
         }}
         
-        /* Ultra-specific targeting for bold text like **Product:** - WHITE */
-        .results-columns [data-testid="column"] .stMarkdown p strong {{
-            color: white !important;
-            font-weight: 800 !important;
-        }}
-        
-        /* Ensure bullet points and dashes are visible - WHITE */
-        .results-columns [data-testid="column"] .stWrite p {{
-            color: white !important;
-        }}
-        
-        /* Override any inline styles in result cards */
-        .results-columns [data-testid="column"] div[style*="color"] {{
-            color: white !important;
-        }}
-        
-        /* NUCLEAR OPTION - Force everything in result cards to be white */
-        .results-columns [data-testid="column"] *,
-        .results-columns [data-testid="column"] *:before,
-        .results-columns [data-testid="column"] *:after {{
-            color: white !important;
-        }}
-        
-        /* Specifically target any remaining blue text */
-        .results-columns [data-testid="column"] [style*="#34495e"],
-        .results-columns [data-testid="column"] [style*="#4B0082"],
-        .results-columns [data-testid="column"] [style*="color: blue"],
-        .results-columns [data-testid="column"] [style*="color: #"],
-        .results-columns div[class*="variants"] {{
-            color: white !important;
+        .results-columns [data-testid="column"] a:hover {{
+            color: #2980b9 !important;
         }}
         
         /* Menu button styling */
