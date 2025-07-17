@@ -436,28 +436,40 @@ def get_theme_css(dark_mode=True):
             margin-bottom: 0.3rem !important;
         }}
         
-        /* Fix Product and Variants text visibility in cards */
-        .results-columns .stMarkdown strong,
-        .results-columns .stWrite strong,
-        .results-columns strong {{
-            color: #2c3e50 !important;
+        /* Fix Product and Variants text visibility in cards - MORE SPECIFIC */
+        .results-columns [data-testid="column"] .stMarkdown strong,
+        .results-columns [data-testid="column"] .stWrite strong,
+        .results-columns [data-testid="column"] strong,
+        .results-columns [data-testid="column"] p strong {{
+            color: #1a252f !important;
             font-weight: 700 !important;
+            font-size: 1.1rem !important;
         }}
         
-        /* Fix all text content in result cards */
-        .results-columns .stMarkdown,
-        .results-columns .stWrite,
-        .results-columns p,
-        .results-columns li,
-        .results-columns span,
-        .results-columns div:not(.variants-header) {{
-            color: #2c3e50 !important;
+        /* Fix all text content in result cards - FORCE OVERRIDE */
+        .results-columns [data-testid="column"] .stMarkdown,
+        .results-columns [data-testid="column"] .stWrite,
+        .results-columns [data-testid="column"] p,
+        .results-columns [data-testid="column"] li,
+        .results-columns [data-testid="column"] span,
+        .results-columns [data-testid="column"] div:not(.variants-header) {{
+            color: #1a252f !important;
+        }}
+        
+        /* Ultra-specific targeting for Product text */
+        .results-columns [data-testid="column"] .stMarkdown p {{
+            color: #1a252f !important;
+        }}
+        
+        /* Ultra-specific targeting for bold text like **Product:** */
+        .results-columns [data-testid="column"] .stMarkdown p strong {{
+            color: #1a252f !important;
+            font-weight: 800 !important;
         }}
         
         /* Ensure bullet points and dashes are visible */
-        .results-columns .stMarkdown p:contains("**Product:**"),
-        .results-columns .stMarkdown p:contains("- ") {{
-            color: #2c3e50 !important;
+        .results-columns [data-testid="column"] .stWrite p {{
+            color: #1a252f !important;
         }}
         
         /* Menu button styling */
