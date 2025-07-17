@@ -759,10 +759,9 @@ with tab1:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Input with immediate validation and Enter key support
-    barcode = st.text_input("Enter barcode number", key="barcode_input")
-    
-    # Check if Enter was pressed (form submission)
-    search_triggered = False
+    with st.form("search_form"):
+        barcode = st.text_input("Enter barcode number", key="barcode_input")
+        search_clicked = st.form_submit_button("Search")
     
     if barcode:
         if not barcode.isdigit():
@@ -770,12 +769,10 @@ with tab1:
         elif len(barcode) < 8:
             st.warning("Barcode must be at least 8 digits")
         else:
-            st.success("Valid barcode entered")
-            # Auto-trigger search when valid barcode is entered
-            search_triggered = True
+            st.success("Valid barcode entered - Press Enter or click Search")
 
-    # Search button with progress indicators OR Enter key trigger
-    if (st.button("Search") or search_triggered) and barcode and barcode.isdigit():
+    # Search triggered by form submission (Enter key or Search button)
+    if search_clicked and barcode and barcode.isdigit():
         with st.spinner("Searching databases..."):
             # Wrap results columns in custom class for styling
             st.markdown('<div class="results-columns">', unsafe_allow_html=True)
