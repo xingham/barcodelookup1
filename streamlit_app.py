@@ -759,6 +759,9 @@ if st.button("Search") and barcode and barcode.isdigit():
                     st.markdown(f"[{title}]({link})")
             else:
                 st.info("No Google results found")
+                # Add manual search link
+                google_search_url = f"https://www.google.com/search?q={barcode}"
+                st.markdown(f"[🔍 Search Google manually for: {barcode}]({google_search_url})")
                 
         # Close the results columns div
         st.markdown('</div>', unsafe_allow_html=True)
