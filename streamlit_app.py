@@ -479,6 +479,11 @@ def get_theme_css(dark_mode=True):
             color: white !important;
         }}
         
+        /* Override any inline styles in result cards */
+        .results-columns [data-testid="column"] div[style*="color"] {{
+            color: white !important;
+        }}
+        
         /* Menu button styling */
         button, [data-testid="baseButton-secondary"] {{
             color: white !important;
@@ -832,7 +837,7 @@ if st.button("Search") and barcode and barcode.isdigit():
                     domain = domain.split('.')[0].title()
                     
                     # Display domain header and result (show all domains equally)
-                    st.markdown(f"<div style='font-weight: bold; color: #4B0082; margin-bottom: 5px;'>{domain}</div>", 
+                    st.markdown(f"<div style='font-weight: bold; color: white; margin-bottom: 5px;'>{domain}</div>", 
                               unsafe_allow_html=True)
                     st.markdown(f"[{title}]({link})")
             else:
