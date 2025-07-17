@@ -385,7 +385,7 @@ def get_theme_css(dark_mode=True):
             -webkit-text-fill-color: transparent;
         }}
         
-        /* Modern variants header */
+        /* Modern variants header - FORCE WHITE IN CARDS */
         .variants-header {{
             font-size: 1.2rem !important;
             font-weight: 500 !important;
@@ -393,6 +393,11 @@ def get_theme_css(dark_mode=True):
             color: #34495e !important;
             border-left: 4px solid #3498db;
             padding-left: 1rem;
+        }}
+        
+        /* Override variants header in result cards to be WHITE */
+        .results-columns .variants-header {{
+            color: white !important;
         }}
         
         /* Modern links styling */
@@ -481,6 +486,22 @@ def get_theme_css(dark_mode=True):
         
         /* Override any inline styles in result cards */
         .results-columns [data-testid="column"] div[style*="color"] {{
+            color: white !important;
+        }}
+        
+        /* NUCLEAR OPTION - Force everything in result cards to be white */
+        .results-columns [data-testid="column"] *,
+        .results-columns [data-testid="column"] *:before,
+        .results-columns [data-testid="column"] *:after {{
+            color: white !important;
+        }}
+        
+        /* Specifically target any remaining blue text */
+        .results-columns [data-testid="column"] [style*="#34495e"],
+        .results-columns [data-testid="column"] [style*="#4B0082"],
+        .results-columns [data-testid="column"] [style*="color: blue"],
+        .results-columns [data-testid="column"] [style*="color: #"],
+        .results-columns div[class*="variants"] {{
             color: white !important;
         }}
         
