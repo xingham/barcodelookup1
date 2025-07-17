@@ -558,26 +558,33 @@ def track_search_analytics(barcode, results):
     st.session_state.search_history.append(search_entry)
     st.session_state.search_count += 1
     
-    # Track brand analytics
+    # Track brand analytics only from the primary product title (first UPC result)
+    # This ensures we're tracking brands from the actual barcode, not random search results
+    primary_product = None
     for result in results:
-        if 'title' in result:
-            title = result['title'].lower()
-            # Extract potential brand names (simple heuristic)
-            words = title.split()
-            for word in words[:3]:  # Check first 3 words for brand names
-                if len(word) > 2 and word.isalpha():
-                    brand = word.title()
-                    if brand not in st.session_state.brand_analytics:
-                        st.session_state.brand_analytics[brand] = {
-                            'count': 0,
-                            'first_seen': datetime.now().isoformat(),
-                            'last_seen': datetime.now().isoformat(),
-                            'barcodes': []
-                        }
-                    st.session_state.brand_analytics[brand]['count'] += 1
-                    st.session_state.brand_analytics[brand]['last_seen'] = datetime.now().isoformat()
-                    if barcode not in st.session_state.brand_analytics[brand]['barcodes']:
-                        st.session_state.brand_analytics[brand]['barcodes'].append(barcode)
+        if result.get('source') == 'UPC' and 'title' in result:
+            primary_product = result['title']
+            break
+    
+    if primary_product:
+        title = primary_product.lower()
+        # Extract potential brand names (simple heuristic) - only first word is likely brand
+        words = title.split()
+        if len(words) > 0:
+            first_word = words[0]
+            if len(first_word) > 2 and first_word.isalpha():
+                brand = first_word.title()
+                if brand not in st.session_state.brand_analytics:
+                    st.session_state.brand_analytics[brand] = {
+                        'count': 0,
+                        'first_seen': datetime.now().isoformat(),
+                        'last_seen': datetime.now().isoformat(),
+                        'barcodes': []
+                    }
+                st.session_state.brand_analytics[brand]['count'] += 1
+                st.session_state.brand_analytics[brand]['last_seen'] = datetime.now().isoformat()
+                if barcode not in st.session_state.brand_analytics[brand]['barcodes']:
+                    st.session_state.brand_analytics[brand]['barcodes'].append(barcode)
     
     # Keep only last 1000 searches to prevent memory issues
     if len(st.session_state.search_history) > 1000:
@@ -585,12 +592,12 @@ def track_search_analytics(barcode, results):
 
 def search_google(query):
     try:
-        # Temporarily disable cache to test new PDF filtering
-        # cached_results = get_cached_results(query)
-        # if cached_results:
-        #     if DEBUG:
-        #         st.sidebar.info("Using cached results")
-        #     return cached_results
+        # Check for cached results first to avoid unnecessary API calls
+        cached_results = get_cached_results(query)
+        if cached_results:
+            if DEBUG:
+                st.sidebar.info("Using cached results")
+            return cached_results
 
         api_key = get_next_api_key()
         if not api_key:
