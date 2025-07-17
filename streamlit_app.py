@@ -822,6 +822,11 @@ with tab1:
                         st.markdown(f"<div style='font-weight: bold; color: white; margin-bottom: 5px;'>{domain}</div>", 
                                   unsafe_allow_html=True)
                         st.markdown(f"[{title}]({link})")
+                    
+                    # Add manual search link even when results are found
+                    st.write("---")
+                    google_search_url = f"https://www.google.com/search?q={barcode}"
+                    st.markdown(f"[🔍 Search Google manually for: {barcode}]({google_search_url})")
                 else:
                     st.info("No Google results found")
                     # Add manual search link
