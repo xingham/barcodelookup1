@@ -412,6 +412,13 @@ def get_theme_css(dark_mode=True):
             color: #2980b9 !important;
         }}
         
+        /* Force ONLY text labels (not links) in result cards to be WHITE */
+        .results-columns [data-testid="column"] .stMarkdown p strong:not(a),
+        .results-columns [data-testid="column"] strong:not(a),
+        .results-columns .variants-header {{
+            color: white !important;
+        }}
+        
         /* Modern loading spinner */
         .stSpinner {{
             color: {title_color} !important;
